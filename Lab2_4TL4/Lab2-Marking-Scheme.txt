@@ -1,0 +1,22 @@
+********* Marking Scheme for Lab 2 (CoE 4TL4) *********
+
+Total:
+
+Demo: 30
+Report: 10
+___________________________________
+
+Mark Breakdowns:
+
+MATLAB code demo: 
+Q1: 6
+Q2: 4
+Q3: 12
+Q4: 8 (Hardware implementation: 5 + Results and explanations: 3)
+
+Report: 
+Q1: 2
+Q2: 2.5
+Q3: 2.5
+Q4: 3
+
