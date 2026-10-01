@@ -45,7 +45,7 @@ end
 %% iii
 doubleimage3 = zeros(height,width);
 
-for
+
 
 
 
