@@ -92,7 +92,7 @@ packet_arrival_event(Simulation_Run_Ptr simulation_run, void * ptr)
 
   schedule_packet_arrival_event(simulation_run,
 			simulation_run_get_time(simulation_run) +
-			exponential_generator((double) 1/PACKET_ARRIVAL_RATE));
+			exponential_generator((double) 1/(data -> arrival_rate)));
 }
 
 

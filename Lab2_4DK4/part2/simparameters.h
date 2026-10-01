@@ -28,8 +28,8 @@
 
 /******************************************************************************/
 
-#define PACKET_ARRIVAL_RATE 400 /* packets per second */
-#define PACKET_LENGTH 5e2/* bits */
+//#define PACKET_ARRIVAL_RATE 400 /* packets per second */
+#define PACKET_LENGTH 2e3/* bits */
 #define LINK_BIT_RATE 1e6 /* bits per second */
 #define RUNLENGTH 10e6 /* packets */
 
@@ -37,6 +37,8 @@
 #define RANDOM_SEED_LIST 400440917, 400473040
 
 #define PACKET_XMT_TIME ((double) PACKET_LENGTH/LINK_BIT_RATE)
+
+#define DELAY_LIMIT_SECONDS 0.020  
 #define BLIPRATE (RUNLENGTH/1000)
 
 /******************************************************************************/
