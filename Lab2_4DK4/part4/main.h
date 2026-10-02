@@ -31,18 +31,37 @@
 #include "simlib.h"
 #include "simparameters.h"
 
+#define NUMBER_OF_SERVERS 2
 /******************************************************************************/
 
-typedef struct _simulation_run_data_ 
+typedef struct _simulation_run_data_
 {
-  Fifoqueue_Ptr buffer;
-  Server_Ptr link;
-  long int blip_counter;
-  long int arrival_count;
-  long int number_of_packets_processed;
-  double accumulated_delay;
-  unsigned random_seed;
+    Fifoqueue_Ptr buffer1;
+    Fifoqueue_Ptr buffer2;
+    Fifoqueue_Ptr buffer3;
+
+
+    Server_Ptr link1;
+    Server_Ptr link2;
+    Server_Ptr link3;
+
+
+    long int blip_counter;
+    long int arrival_count;
+    long int number_of_packets_processed;
+
+    /* Part 2 statistics */
+    long int exceed_20ms_count;
+
+    double accumulated_delay;
+
+    /* Runtime arrival rate */
+    double arrival_rate;
+
+    unsigned random_seed;
+
 } Simulation_Run_Data, * Simulation_Run_Data_Ptr;
+
 
 typedef enum {XMTTING, WAITING} Packet_Status;
 
