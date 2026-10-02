@@ -54,7 +54,7 @@ schedule_packet_arrival_event(Simulation_Run_Ptr simulation_run,
 /******************************************************************************/
 
 /*
- * This is the event function which is executed when a packet arrival event
+2 * This is the event function which is executed when a packet arrival event
  * occurs. It creates a new packet object and places it in either the fifo
  * queue if the server is busy. Otherwise it starts the transmission of the
  * packet. It then schedules the next packet arrival event.
@@ -79,12 +79,26 @@ packet_arrival_event(Simulation_Run_Ptr simulation_run, void * ptr)
    * the buffer.
    */
 
-  if(server_state(data->link) == BUSY) {
-    fifoqueue_put(data->buffer, (void*) new_packet);
-  } else {
-    start_transmission_on_link(simulation_run, new_packet, data->link);
+  if(server_state(data->link[0]) == FREE)
+  {
+    start_transmission_on_link(
+        simulation_run,
+        new_packet,
+        data->link[0]
+    );
   }
-
+  else if(server_state(data->link[1]) == FREE)
+  {
+    start_transmission_on_link(
+        simulation_run,
+        new_packet,
+        data->link[1]
+    );
+  }
+  else
+  {
+    fifoqueue_put(data->buffer, (void *)new_packet);
+  }
   /* 
    * Schedule the next packet arrival. Independent, exponentially distributed
    * interarrival times gives us Poisson process arrivals.
@@ -92,7 +106,7 @@ packet_arrival_event(Simulation_Run_Ptr simulation_run, void * ptr)
 
   schedule_packet_arrival_event(simulation_run,
 			simulation_run_get_time(simulation_run) +
-			exponential_generator((double) 1/PACKET_ARRIVAL_RATE));
+			exponential_generator((double) 1/(data -> arrival_rate)));
 }
 
 
