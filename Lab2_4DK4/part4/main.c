@@ -1,193 +1,92 @@
-
-/*
- * 
- * Simulation_Run of A Single Server Queueing System
- * 
- * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA,
- * todd@mcmaster.ca
- * 
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */
-
-/*******************************************************************************/
-
-#include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#include "output.h"
-#include "simparameters.h"
+#include "main.h"
 #include "packet_arrival.h"
 #include "cleanup_memory.h"
-#include "trace.h"
-#include "main.h"
+#include "output.h"
 
-/******************************************************************************/
+static long int total_processed(const Simulation_Run_Data *data)
+{
+  return data->number_of_packets_processed[0] +
+         data->number_of_packets_processed[1] +
+         data->number_of_packets_processed[2];
+}
 
-/*
- * main.c declares and creates a new simulation_run with parameters defined in
- * simparameters.h. The code creates a fifo queue and server for the single
- * server queueuing system. It then loops through the list of random number
- * generator seeds defined in simparameters.h, doing a separate simulation_run
- * run for each. To start a run, it schedules the first packet arrival
- * event. When each run is finished, output is printed on the terminal.
- */
-
-int
-main(void)
+int main(void)
 {
   Simulation_Run_Ptr simulation_run;
   Simulation_Run_Data data;
-
   FILE *csv_file;
-
-  double arrival_rates[] = {
-    300, 500, 700, 900,
-    1100, 1300, 1500,
-    1600, 1700, 1800,
-    1850, 1900 
+  const double p12_values[] = {
+    0.0, 0.1, 0.2, 0.3, 0.4, 0.5,
+    0.6, 0.7, 0.8, 0.9, 1.0
   };
-  
-  int number_of_rates;
-  int rate_index;
-
-  /*
-   * Declare and initialize our random number generator seeds defined in
-   * simparameters.h
-   */
-  
-  unsigned RANDOM_SEEDS[] = {RANDOM_SEED_LIST, 0};
+  const int number_of_p12_values =
+    (int)(sizeof(p12_values) / sizeof(p12_values[0]));
+  unsigned random_seeds[] = {RANDOM_SEED_LIST, 0};
   unsigned random_seed;
-  
+  int p_index;
+  int seed_index;
+  int i;
 
-  /* 
-   * Loop for each random number generator seed, doing a separate
-   * simulation_run run for each.
-   */
-
-  number_of_rates = sizeof(arrival_rates) / sizeof(arrival_rates[0]);
-
-  csv_file = fopen("part3_results.csv", "w");
-
+  csv_file = fopen("part4_results.csv", "w");
   if (csv_file == NULL) {
-    printf("Error: Cannot create part 2 results.csv \n");
-    return 1; 
+    perror("part4_results.csv");
+    return 1;
   }
-  fprintf(csv_file, "lambda,seed,processed,violations," "probability,mean_delay_ms \n");
+  fprintf(csv_file,
+          "p12,seed,source1_completed,source2_completed,source3_completed,"
+          "source1_delay_ms,source2_delay_ms,source3_delay_ms\n");
 
-  
-  int j = 0; 
-  for (rate_index = 0; rate_index < number_of_rates; rate_index++){
-    j = 0;
-    while ((random_seed = RANDOM_SEEDS[j++]) != 0) {
-      
-      simulation_run = simulation_run_new(); /* Create a new simulation run. */
+  for (p_index = 0; p_index < number_of_p12_values; p_index++) {
+    seed_index = 0;
+    while ((random_seed = random_seeds[seed_index++]) != 0) {
+      simulation_run = simulation_run_new();
+      simulation_run_attach_data(simulation_run, &data);
 
-    /*
-     * Set the simulation_run data pointer to our data object.
-     */
-
-      simulation_run_attach_data(simulation_run, (void *) & data);
-
-    /* 
-     * Initialize the simulation_run data variables, declared in main.h.
-     */
-    
       data.blip_counter = 0;
-      data.arrival_count = 0;
-      data.number_of_packets_processed = 0;
-      data.accumulated_delay = 0.0;
-      data.exceed_20ms_count = 0;
-
-      data.arrival_rate = arrival_rates[rate_index];
+      data.p12 = p12_values[p_index];
       data.random_seed = random_seed;
- 
-    /* 
-     * Create the packet buffer and transmission link, declared in main.h.
-     */
+      for (i = 0; i < 3; i++) {
+        data.arrival_count[i] = 0;
+        data.number_of_packets_processed[i] = 0;
+        data.accumulated_delay[i] = 0.0;
+      }
 
       data.buffer1 = fifoqueue_new();
       data.buffer2 = fifoqueue_new();
       data.buffer3 = fifoqueue_new();
-
       data.link1 = server_new();
       data.link2 = server_new();
-      data.link3 = server_new(); 
-
-
-    /* 
-     * Set the random number generator seed for this run.
-     */
+      data.link3 = server_new();
 
       random_generator_initialize(random_seed);
+      schedule_packet_arrival_1_event(simulation_run, 0.0);
+      schedule_packet_arrival_2_event(simulation_run, 0.0);
+      schedule_packet_arrival_3_event(simulation_run, 0.0);
 
-    /* 
-     * Schedule the initial packet arrival for the current clock time (= 0).
-     */
-
-      schedule_packet_arrival_event(simulation_run, 
-				  simulation_run_get_time(simulation_run));
-
-    /* 
-     * Execute events until we are finished. 
-     */
-
-      while(data.number_of_packets_processed < RUNLENGTH) {
+      while (total_processed(&data) < RUNLENGTH)
         simulation_run_execute_event(simulation_run);
-      }
-
-    /* 
-     * Output results and clean up after ourselves.
-     */
 
       output_results(simulation_run);
-
-      fprintf(
-        csv_file,
-        "%.0f,%u,%ld,%ld,%.10f,%.6f\n",
-
-        data.arrival_rate,
-        data.random_seed,
-        data.number_of_packets_processed,
-        data.exceed_20ms_count,
-
-        (double) data.exceed_20ms_count /
-        data.number_of_packets_processed,
-
-        1000.0 * data.accumulated_delay /
-        data.number_of_packets_processed
-      );
-
+      fprintf(csv_file,
+              "%.1f,%u,%ld,%ld,%ld,%.8f,%.8f,%.8f\n",
+              data.p12,
+              data.random_seed,
+              data.number_of_packets_processed[0],
+              data.number_of_packets_processed[1],
+              data.number_of_packets_processed[2],
+              1000.0 * data.accumulated_delay[0] /
+                data.number_of_packets_processed[0],
+              1000.0 * data.accumulated_delay[1] /
+                data.number_of_packets_processed[1],
+              1000.0 * data.accumulated_delay[2] /
+                data.number_of_packets_processed[2]);
       fflush(csv_file);
       cleanup_memory(simulation_run);
     }
   }
-  fclose(csv_file);
-  printf("LOL the entire function is about to an end");
 
-  //getchar();   /* Pause before finishing. */
+  fclose(csv_file);
+  printf("\nResults saved to part4_results.csv\n");
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-

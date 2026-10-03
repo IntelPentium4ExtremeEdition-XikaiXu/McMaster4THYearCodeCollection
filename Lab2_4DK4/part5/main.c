@@ -1,137 +1,88 @@
-
-/*
- * 
- * Simulation_Run of A Single Server Queueing System
- * 
- * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA,
- * todd@mcmaster.ca
- * 
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */
-
-/*******************************************************************************/
-
-#include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#include "output.h"
-#include "simparameters.h"
+#include "main.h"
 #include "packet_arrival.h"
 #include "cleanup_memory.h"
-#include "trace.h"
-#include "main.h"
+#include "output.h"
 
-/******************************************************************************/
+static long int total_processed(const Simulation_Run_Data *data)
+{
+  return data->voice_processed_count + data->data_processed_count;
+}
 
-/*
- * main.c declares and creates a new simulation_run with parameters defined in
- * simparameters.h. The code creates a fifo queue and server for the single
- * server queueuing system. It then loops through the list of random number
- * generator seeds defined in simparameters.h, doing a separate simulation_run
- * run for each. To start a run, it schedules the first packet arrival
- * event. When each run is finished, output is printed on the terminal.
- */
-
-int
-main(void)
+int main(void)
 {
   Simulation_Run_Ptr simulation_run;
   Simulation_Run_Data data;
+  FILE *csv_file;
 
-  /*
-   * Declare and initialize our random number generator seeds defined in
-   * simparameters.h
-   */
+  const double data_arrival_rates[] = {
+    1, 3, 5, 7, 9, 11, 13,
+    15, 17, 19, 20, 21, 22
+  };
+  const int number_of_rates =
+    (int)(sizeof(data_arrival_rates) / sizeof(data_arrival_rates[0]));
 
-  unsigned RANDOM_SEEDS[] = {RANDOM_SEED_LIST, 0};
+  unsigned random_seeds[] = {RANDOM_SEED_LIST, 0};
   unsigned random_seed;
-  int j=0;
+  int rate_index;
+  int seed_index;
 
-  /* 
-   * Loop for each random number generator seed, doing a separate
-   * simulation_run run for each.
-   */
-
-  while ((random_seed = RANDOM_SEEDS[j++]) != 0) {
-
-    simulation_run = simulation_run_new(); /* Create a new simulation run. */
-
-    /*
-     * Set the simulation_run data pointer to our data object.
-     */
-
-    simulation_run_attach_data(simulation_run, (void *) & data);
-
-    /* 
-     * Initialize the simulation_run data variables, declared in main.h.
-     */
-    
-    data.blip_counter = 0;
-    data.arrival_count = 0;
-    data.number_of_packets_processed = 0;
-    data.accumulated_delay = 0.0;
-    data.random_seed = random_seed;
- 
-    /* 
-     * Create the packet buffer and transmission link, declared in main.h.
-     */
-
-    data.buffer = fifoqueue_new();
-    data.link   = server_new();
-
-    /* 
-     * Set the random number generator seed for this run.
-     */
-
-    random_generator_initialize(random_seed);
-
-    /* 
-     * Schedule the initial packet arrival for the current clock time (= 0).
-     */
-
-    schedule_packet_arrival_event(simulation_run, 
-				  simulation_run_get_time(simulation_run));
-
-    /* 
-     * Execute events until we are finished. 
-     */
-
-    while(data.number_of_packets_processed < RUNLENGTH) {
-      simulation_run_execute_event(simulation_run);
-    }
-
-    /*
-     * Output results and clean up after ourselves.
-     */
-
-    output_results(simulation_run);
-    cleanup_memory(simulation_run);
+  csv_file = fopen("part5_results.csv", "w");
+  if (csv_file == NULL) {
+    perror("part5_results.csv");
+    return 1;
   }
 
-  getchar();   /* Pause before finishing. */
+  fprintf(csv_file,
+          "data_lambda,seed,voice_completed,data_completed,"
+          "voice_delay_ms,data_delay_ms\n");
+
+  for (rate_index = 0; rate_index < number_of_rates; rate_index++) {
+    seed_index = 0;
+
+    while ((random_seed = random_seeds[seed_index++]) != 0) {
+      simulation_run = simulation_run_new();
+      simulation_run_attach_data(simulation_run, &data);
+
+      data.blip_counter = 0;
+      data.voice_arrival_count = 0;
+      data.data_arrival_count = 0;
+      data.voice_processed_count = 0;
+      data.data_processed_count = 0;
+      data.voice_accumulated_delay = 0.0;
+      data.data_accumulated_delay = 0.0;
+      data.data_arrival_rate = data_arrival_rates[rate_index];
+      data.random_seed = random_seed;
+
+      data.buffer = fifoqueue_new();
+      data.link = server_new();
+
+      random_generator_initialize(random_seed);
+      schedule_voice_packet_arrival_event(simulation_run, 0.0);
+      schedule_data_packet_arrival_event(simulation_run, 0.0);
+
+      while (total_processed(&data) < RUNLENGTH)
+        simulation_run_execute_event(simulation_run);
+
+      output_results(simulation_run);
+
+      fprintf(csv_file,
+              "%.1f,%u,%ld,%ld,%.8f,%.8f\n",
+              data.data_arrival_rate,
+              data.random_seed,
+              data.voice_processed_count,
+              data.data_processed_count,
+              1000.0 * data.voice_accumulated_delay /
+                data.voice_processed_count,
+              1000.0 * data.data_accumulated_delay /
+                data.data_processed_count);
+      fflush(csv_file);
+
+      cleanup_memory(simulation_run);
+    }
+  }
+
+  fclose(csv_file);
+  printf("\nResults saved to part5_results.csv\n");
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-

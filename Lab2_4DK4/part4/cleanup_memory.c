@@ -1,69 +1,30 @@
-
-/*
- * 
- * Simulation_Run of A Single Server Queueing System
- * 
- * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA,
- * todd@mcmaster.ca
- * 
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */
-
-/******************************************************************************/
-
-#include "simlib.h"
 #include "main.h"
 #include "cleanup_memory.h"
 
-/******************************************************************************/
-
-/*
- * When a simulation_run run is finished, this function cleans up the memory
- * that has been allocated.
- */
-
-void
-cleanup_memory (Simulation_Run_Ptr simulation_run)
+static void clean_server(Server_Ptr link)
 {
-  Simulation_Run_Data_Ptr data;
-  Fifoqueue_Ptr buffer;
-  Server_Ptr link;
-
-  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
-  buffer = data->buffer;
-  //link = data->link;
-
-  if(data->link1->state == BUSY)
-      xfree(server_get(data->link1));
-  if(data->link2->state == BUSY)
-      xfree(server_get(data->link2));
-  if(data->link3->state == BUSY)
-      xfree(server_get(data->link3));
-  xfree(data->link1);
-  xfree(data->link2);
-  xfree(data->link3);
-
-  xfree(fifoqueue_get(buffer1));
-  xfree(buffer1);
-  xfree(fifoqueue_get(buffer2));
-  xfree(buffer2);
-  xfree(fifoqueue_get(buffer3));
-  xfree(buffer3);
-
-  simulation_run_free_memory(simulation_run); /* Clean up the simulation_run. */
+  if (server_state(link) == BUSY)
+    xfree(server_get(link));
+  xfree(link);
 }
 
+static void clean_queue(Fifoqueue_Ptr buffer)
+{
+  while (fifoqueue_size(buffer) > 0)
+    xfree(fifoqueue_get(buffer));
+  xfree(buffer);
+}
 
+void cleanup_memory(Simulation_Run_Ptr simulation_run)
+{
+  Simulation_Run_Data_Ptr data;
+  data = (Simulation_Run_Data_Ptr)simulation_run_data(simulation_run);
 
+  clean_server(data->link1);
+  clean_server(data->link2);
+  clean_server(data->link3);
+  clean_queue(data->buffer1);
+  clean_queue(data->buffer2);
+  clean_queue(data->buffer3);
+  simulation_run_free_memory(simulation_run);
+}

@@ -1,49 +1,19 @@
-
-/*
- * 
- * Simulation of A Single Server Queueing System
- * 
- * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA,
- * todd@mcmaster.ca
- * 
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */
-
-/******************************************************************************/
-
 #ifndef _SIMPARAMETERS_H_
 #define _SIMPARAMETERS_H_
 
-/******************************************************************************/
+/* Part 4 traffic source rates, packets per second. */
+#define ARRIVAL_RATE_1 750.0
+#define ARRIVAL_RATE_2 500.0
+#define ARRIVAL_RATE_3 500.0
 
-//#define PACKET_ARRIVAL_RATE 400 /* packets per second */
-#define PACKET_LENGTH 500/* bits */
-#define LINK_BIT_RATE 500e3 /* bits per second */
-#define RUNLENGTH 10e6 /* packets */
+/* All packets and links use these values. */
+#define PACKET_LENGTH 500.0
+#define LINK_BIT_RATE 1000000.0
+#define PACKET_XMT_TIME ((double)PACKET_LENGTH / LINK_BIT_RATE)
 
-/* Comma separated list of random seeds to run. */
+/* Total completed packets from all three sources per run. */
+#define RUNLENGTH 1000000L
 #define RANDOM_SEED_LIST 400440917, 400473040
+#define BLIPRATE (RUNLENGTH / 1000)
 
-#define PACKET_XMT_TIME ((double) PACKET_LENGTH/LINK_BIT_RATE)
-
-#define DELAY_LIMIT_SECONDS 0.020  
-#define BLIPRATE (RUNLENGTH/1000)
-
-/******************************************************************************/
-
-#endif /* simparameters.h */
-
-
-
+#endif

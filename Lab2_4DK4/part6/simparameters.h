@@ -1,47 +1,20 @@
-
-/*
- * 
- * Simulation of A Single Server Queueing System
- * 
- * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA,
- * todd@mcmaster.ca
- * 
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */
-
-/******************************************************************************/
-
 #ifndef _SIMPARAMETERS_H_
 #define _SIMPARAMETERS_H_
 
-/******************************************************************************/
+/* Voice: G.711, 64 kbit/s, 20 ms packetization, 62-byte header. */
+#define VOICE_INTERARRIVAL_TIME 0.020
+#define VOICE_PACKET_LENGTH 1776.0
 
-#define PACKET_ARRIVAL_RATE 400 /* packets per second */
-#define PACKET_LENGTH 5e2/* bits */
-#define LINK_BIT_RATE 1e6 /* bits per second */
-#define RUNLENGTH 10e6 /* packets */
+/* One shared 1 Mbit/s output link. */
+#define LINK_BIT_RATE 1000000.0
+#define VOICE_SERVICE_TIME (VOICE_PACKET_LENGTH / LINK_BIT_RATE)
 
-/* Comma separated list of random seeds to run. */
+/* Data packet transmission time is exponential with 40 ms mean. */
+#define DATA_MEAN_SERVICE_TIME 0.040
+
+/* Total completed Voice + Data packets in each run. */
+#define RUNLENGTH 1000000L
 #define RANDOM_SEED_LIST 400440917, 400473040
+#define BLIPRATE (RUNLENGTH / 1000)
 
-#define PACKET_XMT_TIME ((double) PACKET_LENGTH/LINK_BIT_RATE)
-#define BLIPRATE (RUNLENGTH/1000)
-
-/******************************************************************************/
-
-#endif /* simparameters.h */
-
-
-
+#endif

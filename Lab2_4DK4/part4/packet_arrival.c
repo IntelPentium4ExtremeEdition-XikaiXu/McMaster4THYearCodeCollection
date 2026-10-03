@@ -1,113 +1,103 @@
-
-/*
- * 
- * Simulation_Run of A Single Server Queueing System
- * 
- * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA,
- * todd@mcmaster.ca
- * 
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */
-
-/******************************************************************************/
-
-#include <math.h>
-#include <stdio.h>
 #include "main.h"
-#include "packet_transmission.h"
 #include "packet_arrival.h"
+#include "packet_transmission.h"
 
-/******************************************************************************/
-
-/*
- * This function will schedule a packet arrival at a time given by
- * event_time. At that time the function "packet_arrival" (located in
- * packet_arrival.c) is executed. An object can be attached to the event and
- * can be recovered in packet_arrival.c.
- */
-
-long int
-schedule_packet_arrival_event(Simulation_Run_Ptr simulation_run,
-			      double event_time)
+static long int schedule_arrival_event(Simulation_Run_Ptr simulation_run,
+                                       double event_time,
+                                       void (*function)(Simulation_Run_Ptr, void *),
+                                       const char *description)
 {
   Event event;
-
-  event.description = "Packet Arrival";
-  event.function = packet_arrival_event;
-  event.attachment = (void *) NULL;
-
+  event.description = description;
+  event.function = function;
+  event.attachment = NULL;
   return simulation_run_schedule_event(simulation_run, event, event_time);
 }
 
-/******************************************************************************/
-
-/*
-2 * This is the event function which is executed when a packet arrival event
- * occurs. It creates a new packet object and places it in either the fifo
- * queue if the server is busy. Otherwise it starts the transmission of the
- * packet. It then schedules the next packet arrival event.
- */
-
-void
-packet_arrival_event(Simulation_Run_Ptr simulation_run, void * ptr)
+long int schedule_packet_arrival_1_event(Simulation_Run_Ptr simulation_run,
+                                         double event_time)
 {
-  Simulation_Run_Data_Ptr data;
-  Packet_Ptr new_packet;
-
-  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
-  data->arrival_count++;
-
-  new_packet = (Packet_Ptr) xmalloc(sizeof(Packet));
-  new_packet->arrive_time = simulation_run_get_time(simulation_run);
-  new_packet->service_time = get_packet_transmission_time();
-  new_packet->status = WAITING;
-
-  /* 
-   * Start transmission if the data link is free. Otherwise put the packet into
-   * the buffer.
-   */
-
-  if(server_state(data->link[0]) == FREE)
-  {
-    start_transmission_on_link(
-        simulation_run,
-        new_packet,
-        data->link[0]
-    );
-  }
-  else if(server_state(data->link[1]) == FREE)
-  {
-    start_transmission_on_link(
-        simulation_run,
-        new_packet,
-        data->link[1]
-    );
-  }
-  else
-  {
-    fifoqueue_put(data->buffer, (void *)new_packet);
-  }
-  /* 
-   * Schedule the next packet arrival. Independent, exponentially distributed
-   * interarrival times gives us Poisson process arrivals.
-   */
-
-  schedule_packet_arrival_event(simulation_run,
-			simulation_run_get_time(simulation_run) +
-			exponential_generator((double) 1/(data -> arrival_rate)));
+  return schedule_arrival_event(simulation_run, event_time,
+                                packet_arrival_1_event, "Source 1 Arrival");
 }
 
+long int schedule_packet_arrival_2_event(Simulation_Run_Ptr simulation_run,
+                                         double event_time)
+{
+  return schedule_arrival_event(simulation_run, event_time,
+                                packet_arrival_2_event, "Source 2 Arrival");
+}
 
+long int schedule_packet_arrival_3_event(Simulation_Run_Ptr simulation_run,
+                                         double event_time)
+{
+  return schedule_arrival_event(simulation_run, event_time,
+                                packet_arrival_3_event, "Source 3 Arrival");
+}
 
+static Packet_Ptr create_packet(Simulation_Run_Ptr simulation_run, int source_id)
+{
+  Packet_Ptr packet = (Packet_Ptr)xmalloc(sizeof(Packet));
+  packet->arrive_time = simulation_run_get_time(simulation_run);
+  packet->service_time = PACKET_XMT_TIME;
+  packet->source_id = source_id;
+  packet->destination_id = 0;
+  packet->status = WAITING;
+  return packet;
+}
+
+static void send_or_queue(Simulation_Run_Ptr simulation_run,
+                          Packet_Ptr packet,
+                          Server_Ptr link,
+                          Fifoqueue_Ptr buffer)
+{
+  if (server_state(link) == FREE)
+    start_transmission_on_link(simulation_run, packet, link);
+  else
+    fifoqueue_put(buffer, packet);
+}
+
+void packet_arrival_1_event(Simulation_Run_Ptr simulation_run, void *unused)
+{
+  Simulation_Run_Data_Ptr data;
+  Packet_Ptr packet;
+  (void)unused;
+  data = (Simulation_Run_Data_Ptr)simulation_run_data(simulation_run);
+  data->arrival_count[0]++;
+  packet = create_packet(simulation_run, 1);
+  send_or_queue(simulation_run, packet, data->link1, data->buffer1);
+  schedule_packet_arrival_1_event(
+    simulation_run,
+    simulation_run_get_time(simulation_run) +
+      exponential_generator(1.0 / ARRIVAL_RATE_1));
+}
+
+void packet_arrival_2_event(Simulation_Run_Ptr simulation_run, void *unused)
+{
+  Simulation_Run_Data_Ptr data;
+  Packet_Ptr packet;
+  (void)unused;
+  data = (Simulation_Run_Data_Ptr)simulation_run_data(simulation_run);
+  data->arrival_count[1]++;
+  packet = create_packet(simulation_run, 2);
+  send_or_queue(simulation_run, packet, data->link2, data->buffer2);
+  schedule_packet_arrival_2_event(
+    simulation_run,
+    simulation_run_get_time(simulation_run) +
+      exponential_generator(1.0 / ARRIVAL_RATE_2));
+}
+
+void packet_arrival_3_event(Simulation_Run_Ptr simulation_run, void *unused)
+{
+  Simulation_Run_Data_Ptr data;
+  Packet_Ptr packet;
+  (void)unused;
+  data = (Simulation_Run_Data_Ptr)simulation_run_data(simulation_run);
+  data->arrival_count[2]++;
+  packet = create_packet(simulation_run, 3);
+  send_or_queue(simulation_run, packet, data->link3, data->buffer3);
+  schedule_packet_arrival_3_event(
+    simulation_run,
+    simulation_run_get_time(simulation_run) +
+      exponential_generator(1.0 / ARRIVAL_RATE_3));
+}
