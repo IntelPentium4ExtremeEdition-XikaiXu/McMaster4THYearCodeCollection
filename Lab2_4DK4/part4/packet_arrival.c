@@ -39,7 +39,10 @@ static Packet_Ptr create_packet(Simulation_Run_Ptr simulation_run, int source_id
 {
   Packet_Ptr packet = (Packet_Ptr)xmalloc(sizeof(Packet));
   packet->arrive_time = simulation_run_get_time(simulation_run);
-  packet->service_time = PACKET_XMT_TIME;
+  if (source_id == 1)
+    packet->service_time = PACKET_XMT_TIME_LINK1;   /* 0.5 ms */
+  else
+    packet->service_time = PACKET_XMT_TIME_LINK2;   /* 1.0 ms, Link 3 same */
   packet->source_id = source_id;
   packet->destination_id = 0;
   packet->status = WAITING;

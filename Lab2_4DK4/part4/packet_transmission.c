@@ -62,11 +62,14 @@ void end_packet_transmission_event(Simulation_Run_Ptr simulation_run, void *ptr)
     /* Keep Link 1 busy with its next queued packet before forwarding. */
     start_next_waiting_packet(simulation_run, data->buffer1, data->link1);
 
+    /* Forwarding over Link 2 or Link 3 uses a 1 ms service time. */
     if (uniform_generator() < data->p12) {
       packet->destination_id = 2;
+      packet->service_time = PACKET_XMT_TIME_LINK2;
       send_or_queue(simulation_run, packet, data->link2, data->buffer2);
     } else {
       packet->destination_id = 3;
+      packet->service_time = PACKET_XMT_TIME_LINK3;
       send_or_queue(simulation_run, packet, data->link3, data->buffer3);
     }
     return;
@@ -99,5 +102,5 @@ void start_transmission_on_link(Simulation_Run_Ptr simulation_run,
 
 double get_packet_transmission_time(void)
 {
-  return PACKET_XMT_TIME;
+  return PACKET_XMT_TIME_LINK1;
 }
