@@ -1,0 +1,28 @@
+Arguments: /home/test/mascim-4dm4/bin/macsim 
+src/macsim.cc:122: (I=0  C=0):  initialize knobs
+number of cores : 1
+src/macsim.cc:537: (I=0  C=0):  initialize simulation
+src/macsim.cc:321: (I=0  C=0):  initialize cores (1/0/0)
+src/exec.cc:190: (I=0  C=0):  UOP latency mapped to Sandy Bridge
+src/memory.cc:1567: (I=0  C=0):  Memory system(igpu_network) has been initialized.
+src/network_ring.cc:94: (I=0  C=0):  TOTAL_ROUTER:4 CPU:1 GPU:0 L3:1 LLC:1 MC:1
+src/network_ring.cc:284: (I=0  C=0):  RING topology
+0 <-> 1 <-> 2 <-> 3 <-> 
+enabling bug detector
+src/macsim.cc:750: (I=0  C=0):  Initializing new noc
+
+src/macsim.cc:838: (I=0  C=0):  Clock LCM           : 110
+src/macsim.cc:839: (I=0  C=0):  CPU clock frequency : 1.15 GHz
+src/macsim.cc:840: (I=0  C=0):  GPU clock frequency : 1.15 GHz
+src/macsim.cc:841: (I=0  C=0):  LLC clock frequency : 1 GHz
+src/macsim.cc:842: (I=0  C=0):  NOC clock frequency : 1.15 GHz
+src/macsim.cc:843: (I=0  C=0):  MC  clock frequency : 1.15 GHz
+src/process_manager.cc:430: (I=0  C=0):  setup_process:0 ../tools/benchmarks/memcpy/BM.txt current_index:0 (1)
+trace:../tools/benchmarks/memcpy/BM.txt is opened 
+src/process_manager.cc:541: (I=0  C=0):  thread_count:1
+**Core 00 Thread 00 Finished:   insts:228002      cycles:3755270    (37552690)  seconds:65    -- 0.06 IPC (0.06 IPC) --  N/A  KHz (3.51 KHz) 
+src/retire.cc:563: (I=228001  C=37552690):  ----- application 0 terminated (../tools/benchmarks/memcpy/BM.txt,0) at 37552690
+**Core 00 Core_Total  Finished:   insts:228002      cycles:3755270    (37552690) seconds:65    -- 0.06 IPC (0.06 IPC) --  N/A  KHz (3.51 KHz)
+src/macsim.cc:620: (I=228002  C=37552691):  finalize simulation
+src/macsim.cc:624: (I=228002  C=37552691):  elapsed time:64.4 seconds
+Done

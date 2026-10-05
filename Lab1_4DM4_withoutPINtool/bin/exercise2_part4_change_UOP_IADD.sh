@@ -1,0 +1,64 @@
+#!/bin/bash
+
+BENCH_DIR="../tools/benchmarks"
+OUT_DIR="../labs/part4_iadd"
+TRACE_LIST="trace_file_list"
+
+mkdir -p "$OUT_DIR"
+
+benchmarks=(
+    median
+    memcpy
+    mergesort
+    multiply
+    spmv
+    stmatmul
+    stvvadd
+    towers
+    vvadd
+)
+
+echo "benchmark;instructions;cycles;CPI" > "$OUT_DIR/iadd_results.csv"
+
+for b in "${benchmarks[@]}"; do
+
+    case "$b" in
+        stmatmul)
+            dir_name="st-matmul"
+            ;;
+        stvvadd)
+            dir_name="st-vvadd"
+            ;;
+        *)
+            dir_name="$b"
+            ;;
+    esac
+
+    echo "Running $b..."
+
+    printf "1\n%s\n" \
+        "$BENCH_DIR/$dir_name/BM.txt" \
+        > "$TRACE_LIST"
+
+    ./macsim &> "$OUT_DIR/${b}_improved.out"
+
+    line=$(grep "Core_Total.*Finished" \
+        "$OUT_DIR/${b}_improved.out" | tail -1)
+
+    inst=$(echo "$line" |
+        sed -n 's/.*insts:\([0-9]*\).*/\1/p')
+
+    cycles=$(echo "$line" |
+        sed -n 's/.*cycles:\([0-9]*\).*/\1/p')
+
+    cpi=$(awk -v c="$cycles" -v i="$inst" \
+        'BEGIN {printf "%.4f", c/i}')
+
+    echo "$b;$inst;$cycles;$cpi" \
+        >> "$OUT_DIR/iadd_results.csv"
+
+    echo "$b finished: inst=$inst cycles=$cycles CPI=$cpi"
+
+done
+
+echo "Done."

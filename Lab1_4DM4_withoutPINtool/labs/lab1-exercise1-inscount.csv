@@ -1,0 +1,14 @@
+benchmark_name;instruction_count
+median;158647
+memBW;31621301
+memcpy;239164
+memlatency;22901585
+mergesort;400648
+multiply;167365
+qsort;484639
+rsort;677068
+spmv;238526
+st-matmul;241858
+st-vvadd;248039
+towers;147118
+vvadd;145798

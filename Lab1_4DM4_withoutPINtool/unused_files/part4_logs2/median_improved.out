@@ -1,0 +1,7 @@
+Arguments: /home/test/mascim-4dm4/bin/macsim 
+src/macsim.cc:122: (I=0  C=0):  initialize knobs
+number of cores : 1
+src/macsim.cc:537: (I=0  C=0):  initialize simulation
+src/macsim.cc:321: (I=0  C=0):  initialize cores (1/0/0)
+src/exec.cc:190: (I=0  C=0):  UOP latency mapped to Sandy Bridge
+src/memory.cc:1567: (I=0  C=0):  Memory system(igpu_network) has been initialized.

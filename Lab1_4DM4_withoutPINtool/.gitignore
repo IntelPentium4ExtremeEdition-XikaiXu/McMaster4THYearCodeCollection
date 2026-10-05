@@ -1,0 +1,12 @@
+labs/part2_debug/
+bin/*_execution.debug
+bin/*_done_execution.debug
+
+tools/benchmarks/*/BM_0.raw
+tools/benchmarks/*/BM_0.dump
+
+.dbg_build/
+.opt_build/
+.sconf_temp/
+.sconsign.dblite
+.~lock.*
