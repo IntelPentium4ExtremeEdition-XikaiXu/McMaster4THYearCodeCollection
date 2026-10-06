@@ -1,21 +1,26 @@
 %%Question 1:
 %%Part a:
-x = unit_step(0) - unit_step(10);
+x = unit_step(0) - unit_step(10);  %create rectangular pulse
 
 x = x(x ~= 0); %%remove all the 0 element in the x[n]
 
-n = 0:9;
+n = 0:9; %x axis
+
+%plot the rectangular pulse
 
 stem(n,x,"filled");
 xlabel('n');
 ylabel('x[n]');
+title('x[n] = u[n]- u[n-10]');
 %% Part b and c :
 
+%do the convolution
 a= conv(x,x);
 b= conv(a,x);
 c= conv(b,x);
 d= conv(c,x);
 
+%plot the result of convolutions
 figure;
 subplot(4,1,1);
 stem(0:length(a)-1, a,"filled");
@@ -55,9 +60,9 @@ end
 
 % the samples at the left of the starting sample is 0, and the others are
 % 1.
-for i = 0:100
+for i = 0:100    
     if i < shift
-        x(i+1) = 0;
+        x(i+1) = 0;  %%since matlab do not have 0 index, i+1 will be represented the first number x[0]
     else
         x(i+1) = 1;
     end
