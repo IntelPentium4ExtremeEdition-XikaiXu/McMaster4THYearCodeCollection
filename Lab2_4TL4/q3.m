@@ -1,5 +1,6 @@
 %% Question 3(a)
 
+%Import KillarneyPic.png
 img = imread('KillarneyPic.png');
 
 info = imfinfo('KillarneyPic.png');
@@ -8,19 +9,20 @@ info = imfinfo('KillarneyPic.png');
 [height,width]= size(img);
 disp(size(img));
 
-% File size in bytes
+% bytes
 Bytes=info.FileSize;
 disp(Bytes);
 
-%% part b 
+%% part b Convert the imported picture into a double-class variable, plot it
 
 doubleimage = im2double(img); 
 imshow(doubleimage);
 %% part c
-%%i
+%%i Impulse sampling at 1/5 of the original rate
+
 doubleimage1 = im2double(img); 
 for i = 1:height
-    if mod(i,5) ~= 1
+    if mod(i,5) ~= 1 %when the indices is divided by 5 and has 1 as remainder, keep their value
         doubleimage1(i,:) = 0;
     end
 end
@@ -30,7 +32,8 @@ for i = 1:width
         doubleimage1(:,i) = 0;
     end
 end
-%% ii
+%% ii Downsampling by a factor of 5
+%if doubleimage1 has data for one index, recorded in double image 2.
 doubleimage2 = zeros(ceil(height/5), ceil(width/5));
 
 for i = 1:width
@@ -54,7 +57,7 @@ for i = 1:size(doubleimage2,1) %the number of rows of downsampling matrix
             col = (j-1)*5 + k;
 
             if col <= width
-                doubleimage3(i,col) = doubleimage2(i,j);
+                doubleimage3(i,col) = doubleimage2(i,j); % copy the value in part ii and paste for 5 times horizontally
             end
 
         end
@@ -72,7 +75,7 @@ for i = 1:size(temp,1)
             row = (i-1)*5 + k;
 
             if row <= height
-                doubleimage3(row,j) = temp(i,j);
+                doubleimage3(row,j) = temp(i,j); %copy the value in the matrix above and paste for 5 times vertically
             end
 
         end
@@ -170,7 +173,7 @@ for j = 1:width
 end
 
 %% Part d
-
+%plot the figure for the 4 double matrixes
 figure;
 
 
@@ -189,7 +192,7 @@ figure;
 imshow(doubleimage4);
 title('(iv) First-Order Hold');
 
-%% function used
+%% function used (linear interpolation)
 function points = interpolate4(x1,x2)
 
     points = zeros(1,4);
@@ -199,7 +202,6 @@ function points = interpolate4(x1,x2)
     end
 
 end
-
 
 
 
