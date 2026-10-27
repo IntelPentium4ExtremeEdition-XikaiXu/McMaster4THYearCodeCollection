@@ -46,8 +46,8 @@ main(void)
   Simulation_Run_Data data;
   int i, j=0;
 
-  int matrix = {(10,5),(10,10),(10,20),(5,3),(5,5),(5,7)};
-  for (uint8_t i = 0 , i < 6;i++) {
+  int matrix[6] = {(10,5),(10,10),(10,20),(5,3),(5,5),(5,7)};
+  for (int i = 0 ; i < 6;i++) {
     /* Do a new simulation_run for each random number generator seed. */
     while ((random_seed = RANDOM_SEEDS[j++]) != 0) {
 

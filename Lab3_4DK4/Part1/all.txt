@@ -1,0 +1,2155 @@
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include <stdio.h>
+#include "simparameters.h"
+#include "main.h"
+#include "channel.h"
+
+/*******************************************************************************/
+
+/*
+ *
+ * Define some channel state helper functions.
+ *
+ */
+
+Channel_Ptr
+channel_new() 
+{
+  Channel_Ptr new_channel;
+
+  new_channel = (Channel_Ptr) xmalloc(sizeof(Channel));
+  set_channel_state(new_channel, IDLE);
+  reset_transmitting_stn_count(new_channel);
+  return new_channel;
+}
+
+Channel_State
+get_channel_state(Channel_Ptr channel)
+{
+  return channel->state;
+}
+
+void
+set_channel_state(Channel_Ptr channel, Channel_State state)
+{
+  channel->state = state;
+}
+
+int
+get_transmitting_stn_count(Channel_Ptr channel)
+{
+  return channel->transmitting_stn_count;
+}
+
+void
+increment_transmitting_stn_count(Channel_Ptr channel)
+{
+  channel->transmitting_stn_count++;
+}
+
+void
+decrement_transmitting_stn_count(Channel_Ptr channel)
+{
+  channel->transmitting_stn_count--;
+}
+
+void
+reset_transmitting_stn_count(Channel_Ptr channel)
+{
+  channel->transmitting_stn_count = 0;
+}
+
+
+/*
+ * 
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd
+ * Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/**********************************************************************/
+
+#ifndef _CHANNEL_H_
+#define _CHANNEL_H_
+
+/**********************************************************************/
+
+#include "simlib.h"
+#include "simparameters.h"
+
+/**********************************************************************/
+
+typedef enum {IDLE, SUCCESS, COLLISION} Channel_State;
+
+typedef struct _channel_
+{
+  Channel_State state;
+  int transmitting_stn_count;
+} Channel, * Channel_Ptr;
+
+/**********************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+Channel_Ptr
+channel_new(void);
+
+Channel_State
+get_channel_state(Channel_Ptr);
+
+void
+set_channel_state(Channel_Ptr, Channel_State);
+
+int
+get_transmitting_stn_count(Channel_Ptr);
+
+void
+increment_transmitting_stn_count(Channel_Ptr);
+
+void
+decrement_transmitting_stn_count(Channel_Ptr);
+
+void
+reset_transmitting_stn_count(Channel_Ptr);
+
+/**********************************************************************/
+
+#endif /* channel.h */
+
+
+
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include "simlib.h"
+#include "main.h"
+#include "simparameters.h"
+#include "cleanup.h"
+
+/*******************************************************************************/
+
+void
+cleanup (Simulation_Run_Ptr simulation_run)
+{
+  Simulation_Run_Data_Ptr data;
+  int i;
+
+  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
+
+  /* Clean out the stations. */
+  for(i=0; i<NUMBER_OF_STATIONS; i++) {
+    while (fifoqueue_size((data->stations+i)->buffer) > 0) {
+      xfree(fifoqueue_get((data->stations+i)->buffer));
+    }
+  }
+  xfree(data->stations);
+
+  /* Clean out the channel. */
+  xfree(data->channel);
+
+  /* Clean up the simulation_run. */
+  simulation_run_free_memory(simulation_run);
+}
+
+
+
+
+/*
+ * Simulation_Run of A Single Server Queueing System
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/**********************************************************************/
+
+#ifndef _CLEANUP_H_
+#define _CLEANUP_H_
+
+/**********************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+void
+cleanup(Simulation_Run *);
+
+/**********************************************************************/
+
+#endif /* cleanup.h */
+
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "output.h"
+#include "trace.h"
+#include "simparameters.h"
+#include "cleanup.h"
+#include "packet_arrival.h"
+#include "packet_transmission.h"
+#include "main.h"
+
+/*******************************************************************************/
+
+int
+main(void)
+{
+  /* Get the list of random number generator seeds defined in simparameters.h */
+  unsigned random_seed;
+  unsigned RANDOM_SEEDS[] = {RANDOM_SEED_LIST, 0};
+
+  Simulation_Run_Ptr simulation_run;
+  Simulation_Run_Data data;
+  int i, j=0;
+
+  int matrix[6] = {(10,5),(10,10),(10,20),(5,3),(5,5),(5,7)};
+  for (int i = 0 ; i < 6;i++) {
+    /* Do a new simulation_run for each random number generator seed. */
+    while ((random_seed = RANDOM_SEEDS[j++]) != 0) {
+
+      /* Set the random generator seed. */
+      random_generator_initialize(random_seed);
+
+      /* Create a new simulation_run. This gives a clock and
+        eventlist. Clock time is set to zero. */
+      simulation_run = (Simulation_Run_Ptr) simulation_run_new();
+
+      /* Add our data definitions to the simulation_run. */
+      simulation_run_set_data(simulation_run, (void *) & data);
+
+      /* Create and initalize the stations. */
+      data.stations = (Station_Ptr) xcalloc((unsigned int) matrix[i][0],
+              sizeof(Station));
+
+      /* Initialize various simulation_run variables. */
+      data.blip_counter = 0;
+      data.arrival_count = 0;
+      data.number_of_packets_processed = 0;
+      data.number_of_collisions = 0;
+      data.accumulated_delay = 0.0;
+      data.random_seed = random_seed;
+      
+      /* Initialize the stations. */
+      for(i=0; i<matrix[i][0]; i++) {
+        (data.stations+i)->id = i;
+        (data.stations+i)->buffer = fifoqueue_new();
+        (data.stations+i)->packet_count = 0;
+        (data.stations+i)->accumulated_delay = 0.0;
+        (data.stations+i)->mean_delay = 0;
+      }
+
+      /* Create and initialize the channel. */
+      data.channel = channel_new();
+
+      /* Schedule initial packet arrival. */
+      schedule_packet_arrival_event(simulation_run, 
+          simulation_run_get_time(simulation_run) +
+          exponential_generator((double) 1/PACKET_ARRIVAL_RATE));
+
+      /* Execute events until we are finished. */
+      while(data.number_of_packets_processed < RUNLENGTH) {
+        simulation_run_execute_event(simulation_run);
+      }
+
+      /* Print out some results. */
+      output_results(simulation_run);
+
+      /* Clean up memory. */
+      cleanup(simulation_run);
+    }
+
+    /* Pause before finishing. */
+    getchar();
+
+    return 0;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * 
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd
+ * Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/**********************************************************************/
+
+#ifndef _MAIN_H_
+#define _MAIN_H_
+
+/**********************************************************************/
+
+#include "simlib.h"
+#include "simparameters.h"
+#include "channel.h"
+
+/**********************************************************************/
+
+typedef double Time;
+typedef Fifoqueue_Ptr Buffer_Ptr;
+
+/**********************************************************************/
+
+typedef struct _station_
+{
+  int id;
+  Buffer_Ptr buffer;
+  long int packet_count;
+  double accumulated_delay;
+  double mean_delay;
+} Station, * Station_Ptr;
+
+/**********************************************************************/
+
+typedef enum {WAITING, TRANSMITTING} Packet_Status;
+
+typedef struct _packet_ 
+{
+  double arrive_time;
+  double service_time;
+  int station_id;
+  Packet_Status status;
+  int collision_count;
+} Packet, * Packet_Ptr;
+
+typedef struct _simulation_run_data_
+{
+  Station_Ptr stations;
+  Channel_Ptr channel;
+  long int blip_counter;
+  long int arrival_count;
+  long int packets_processed;
+  long int number_of_packets_processed;
+  long int number_of_collisions;
+  double accumulated_delay;
+  unsigned random_seed;
+} Simulation_Run_Data, * Simulation_Run_Data_Ptr;
+
+/**********************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+int
+main(void);
+
+/**********************************************************************/
+
+#endif /* main.h */
+
+
+
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include <stdio.h>
+#include "simparameters.h"
+#include "main.h"
+#include "output.h"
+
+/*******************************************************************************/
+
+void
+output_blip_to_screen(Simulation_Run_Ptr simulation_run)
+{
+  double percentagedone;
+  Simulation_Run_Data_Ptr data;
+
+  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
+
+  data->blip_counter++;
+
+  if((data->blip_counter >= BLIPRATE)
+     ||
+     (data->number_of_packets_processed >= RUNLENGTH)) {
+
+    data->blip_counter = 0;
+
+    percentagedone =
+      100 * (double) data->number_of_packets_processed/RUNLENGTH;
+
+    printf("%3.0f%% ", percentagedone);
+
+    printf("Successfully Xmtted Pkts  = %ld (Arrived Pkts = %ld) \r", 
+	   data->number_of_packets_processed, 
+	   data->arrival_count);
+
+    fflush(stdout);
+  }
+}
+
+/**********************************************************************/
+
+void output_results(Simulation_Run_Ptr this_simulation_run)
+{
+  int i;
+  double xmtted_fraction;
+  Simulation_Run_Data_Ptr sim_data;
+
+  sim_data = (Simulation_Run_Data_Ptr) simulation_run_data(this_simulation_run);
+
+  printf("\n");
+  printf("Random Seed = %d \n", sim_data->random_seed);
+  printf("Pkt Arrivals = %ld \n", sim_data->arrival_count);
+
+  xmtted_fraction = (double) sim_data->number_of_packets_processed /
+    sim_data->arrival_count;
+
+  printf("Xmtted Pkts  = %ld (Service Fraction = %.5f)\n",
+	 sim_data->number_of_packets_processed, xmtted_fraction);
+
+  printf("Mean Delay   = %.1f \n",
+	 sim_data->accumulated_delay/sim_data->number_of_packets_processed);
+
+  printf("Mean collisions per packet = %.3f\n",
+	 (double) sim_data->number_of_collisions / 
+	 sim_data->number_of_packets_processed);
+
+  for(i=0; i<NUMBER_OF_STATIONS; i++) {
+
+    printf("Station %2i Mean Delay = %8.1f \n", i,
+	   (sim_data->stations+i)->accumulated_delay / 
+	   (sim_data->stations+i)->packet_count);
+  }
+  printf("\n\n");
+}
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#ifndef _OUTPUT_H_
+#define _OUTPUT_H_
+
+/*******************************************************************************/
+
+#include "trace.h"
+#include "main.h"
+
+/*******************************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+void
+output_blip_to_screen(Simulation_Run_Ptr);
+
+void
+output_results(Simulation_Run_Ptr);
+
+/*******************************************************************************/
+
+#endif /* output.h */
+
+
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include <math.h>
+#include <stdio.h>
+#include "packet_duration.h"
+#include "packet_transmission.h"
+#include "packet_arrival.h"
+
+/*******************************************************************************/
+
+long int
+schedule_packet_arrival_event(Simulation_Run_Ptr simulation_run,
+			      Time event_time)
+{
+  Event event;
+
+  event.description = "Packet Arrival";
+  event.function = packet_arrival_event;
+  event.attachment = NULL;
+
+  return simulation_run_schedule_event(simulation_run, event, event_time);
+}
+
+/*******************************************************************************/
+
+void
+packet_arrival_event(Simulation_Run_Ptr simulation_run, void* dummy_ptr) 
+{
+  int random_station_id;
+  Station_Ptr station;
+  Packet_Ptr new_packet;
+  Buffer_Ptr stn_buffer;
+  Time now;
+  Simulation_Run_Data_Ptr data;
+
+  now = simulation_run_get_time(simulation_run);
+
+  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
+  data->arrival_count++;
+
+  /* Randomly pick the station that this packet is arriving to. Note
+     that randomly splitting a Poisson process creates multiple
+     independent Poisson processes.*/
+  random_station_id = (int) floor(uniform_generator()*NUMBER_OF_STATIONS);
+  station = data->stations + random_station_id;
+
+  new_packet = (Packet_Ptr) xmalloc(sizeof(Packet));
+  new_packet->arrive_time = now;
+  new_packet->service_time = get_packet_duration();
+  new_packet->status = WAITING;
+  new_packet->collision_count = 0;
+  new_packet->station_id = random_station_id;
+
+  /* Put the packet in the buffer at that station. */
+  stn_buffer = station->buffer;
+  fifoqueue_put(stn_buffer, (void *) new_packet);
+
+  /* If this is the only packet at the station, transmit it (i.e., the
+     ALOHA protocol). It stays in the queue either way. */
+  if(fifoqueue_size(stn_buffer) == 1) {
+    /* Transmit the packet. */
+    schedule_transmission_start_event(simulation_run, now, (void *) new_packet);
+  }
+
+  /* Schedule the next packet arrival. */
+  schedule_packet_arrival_event(simulation_run, 
+		now + exponential_generator((double) 1/PACKET_ARRIVAL_RATE));
+}
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*******************************************************************************/
+
+#ifndef _PACKET_ARRIVAL_H_
+#define _PACKET_ARRIVAL_H_
+
+/*******************************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+void
+packet_arrival_event(Simulation_Run_Ptr, void *);
+
+long int
+schedule_packet_arrival_event(Simulation_Run_Ptr, Time);
+
+/*******************************************************************************/
+
+#endif /* packet_arrival.h */
+
+
+
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include "packet_duration.h"
+
+/*******************************************************************************/
+
+double
+get_packet_duration(void)
+{
+  return ((double) MEAN_PACKET_DURATION);
+}
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#ifndef _PACKET_DURATION_
+#define _PACKET_DURATION_
+
+/*******************************************************************************/
+
+#include "trace.h"
+#include "main.h"
+
+/*******************************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+double
+get_packet_duration(void);
+
+/*******************************************************************************/
+
+#endif /* packet_duration.h */
+
+
+
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include <stdio.h>
+#include <math.h>
+#include "trace.h"
+#include "output.h"
+#include "channel.h"
+#include "packet_transmission.h"
+
+/*******************************************************************************/
+
+long int
+schedule_transmission_start_event(Simulation_Run_Ptr simulation_run,
+				  Time event_time,
+				  void * packet) 
+{
+  Event event;
+
+  event.description = "Start Of Packet";
+  event.function = transmission_start_event;
+  event.attachment = packet;
+
+  return simulation_run_schedule_event(simulation_run, event, event_time);
+}
+
+/*******************************************************************************/
+
+void
+transmission_start_event(Simulation_Run_Ptr simulation_run, void * ptr)
+{
+  Packet_Ptr this_packet;
+  Simulation_Run_Data_Ptr data;
+  Channel_Ptr channel;
+
+  this_packet = (Packet_Ptr) ptr;
+  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
+  channel = data->channel;
+
+  /* This packet is starting to transmit. */
+  increment_transmitting_stn_count(channel);
+  this_packet->status = TRANSMITTING;
+
+  if(get_channel_state(channel) != IDLE) {
+    /* The channel is now colliding. */
+    set_channel_state(channel, COLLISION);
+  } else {
+    /* The channel is successful, for now. */
+    set_channel_state(channel, SUCCESS);
+  }
+
+  /* Schedule the end of packet transmission event. */
+  schedule_transmission_end_event(simulation_run,
+				  simulation_run_get_time(simulation_run) + 
+				  this_packet->service_time,
+				  (void *) this_packet);
+}
+
+/*******************************************************************************/
+
+long int
+schedule_transmission_end_event(Simulation_Run_Ptr simulation_run,
+				Time event_time,
+				void * packet)
+{
+  Event event;
+
+  event.description = "End of Packet";
+  event.function = transmission_end_event;
+  event.attachment = packet;
+
+  return simulation_run_schedule_event(simulation_run, event, event_time);
+}
+
+/*******************************************************************************/
+
+void
+transmission_end_event(Simulation_Run_Ptr simulation_run, void * packet, int mean_backoff_duration)
+{
+  Packet_Ptr this_packet, next_packet;
+  Buffer_Ptr buffer;
+  Time backoff_duration, now;
+  Simulation_Run_Data_Ptr data;
+  Channel_Ptr channel;
+
+  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
+  channel = data->channel;
+
+  now = simulation_run_get_time(simulation_run);
+
+  this_packet = (Packet_Ptr) packet;
+  buffer = (data->stations+this_packet->station_id)->buffer;
+
+  /* This station has stopped transmitting. */
+  decrement_transmitting_stn_count(channel);
+
+  /* Check if the packet was successful. */
+  if(get_channel_state(channel) == SUCCESS) {
+
+    /* Transmission was a success. The channel is now IDLE. */
+    set_channel_state(channel, IDLE);
+    
+    TRACE(printf("Success.\n"););
+
+    /* Collect statistics. */
+    data->number_of_packets_processed++;
+
+    (data->stations+this_packet->station_id)->packet_count++;
+    (data->stations+this_packet->station_id)->accumulated_delay +=
+      now - this_packet->arrive_time;
+
+    data->number_of_collisions += this_packet->collision_count;
+    data->accumulated_delay += now - this_packet->arrive_time;
+
+    output_blip_to_screen(simulation_run);
+
+    /* This packet is done. */
+    free((void*) fifoqueue_get(buffer));
+
+    /* See if there is another packet at this station. If so, enable
+       it for transmission. We will transmit immediately. */
+    if(fifoqueue_size(buffer) > 0) {
+      next_packet = fifoqueue_see_front(buffer);
+
+      schedule_transmission_start_event(simulation_run,
+					now,
+					(void*) next_packet);
+    }
+
+  } else {
+
+    /* The transmission was unsuccessful. Clean up the channel state,
+       backoff, and try again. */
+
+    this_packet->collision_count++;
+    this_packet->status = WAITING;
+
+    TRACE(printf("Collision. Collision count = %i\n",
+		 this_packet->collision_count););
+
+    /* If the collision is over, free up the channel. */
+    if(get_transmitting_stn_count(channel) == 0) {
+      set_channel_state(channel, IDLE);
+    }
+
+    backoff_duration = 2.0*uniform_generator() * mean_backoff_duration;
+
+    schedule_transmission_start_event(simulation_run,
+				      now + backoff_duration,
+				      (void *) this_packet);
+  }
+
+}
+
+
+
+
+/*
+ * Simulation_Run of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include "main.h"
+
+/*******************************************************************************/
+
+#ifndef _PACKET_TRANSMISSION_H_
+#define _PACKET_TRANSMISSION_H_
+
+/*******************************************************************************/
+
+/*
+ * Function prototypes
+ */
+
+void
+transmission_start_event(Simulation_Run_Ptr, void *);
+
+long int
+schedule_transmission_start_event(Simulation_Run_Ptr, Time, void *);
+
+void
+transmission_end_event(Simulation_Run_Ptr, void *);
+
+long int
+schedule_transmission_end_event(Simulation_Run_Ptr, Time, void *, int a);
+
+/*******************************************************************************/
+
+#endif /* packet_transmission.h */
+
+
+
+
+/*
+ *
+ * Simlib Simulation_Run Library
+ *
+ * Copyright (C) 2014 Terence D. Todd, Hamilton, Ontario, CANADA,
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include "trace.h"
+#include "simlib.h"
+
+/*******************************************************************************/
+
+/*
+ * Prototype static functions that are local to simlib.
+ */
+
+static Clock_Ptr
+clock_new(void);
+
+static void
+simulation_run_set_time (Simulation_Run_Ptr, double);
+
+static Eventlist_Ptr
+eventlist_new(void);
+
+static Eventlist_Ptr
+simulation_run_get_eventlist(Simulation_Run_Ptr);
+
+static Event_Container_Ptr
+simulation_run_get_event(Simulation_Run_Ptr);
+
+#ifdef TRACE_ON /* This is only used when tracing is active. */
+static void event_print_type(Event);
+#endif /* TRACE_ON */
+
+/******************************************************************************/
+
+/*
+ * Create a new simulation_run. The simulation_run will include a clock, an
+ * event list, and a data pointer to simulation_run data.
+ */
+
+Simulation_Run_Ptr
+simulation_run_new(void)
+{
+  Simulation_Run_Ptr new_simulation_run;
+
+  new_simulation_run = (Simulation_Run_Ptr) xmalloc(sizeof(Simulation_Run));
+  new_simulation_run->eventlist = eventlist_new();
+  new_simulation_run->clock = clock_new();
+  new_simulation_run->data = NULL;
+  return new_simulation_run;
+}
+
+/*
+ * When a new simulation_run is defined and created, a clock is created which is
+ * part of the simulation_run.
+ */
+ 
+static
+Clock_Ptr clock_new (void)
+{
+  Clock_Ptr new_clock;
+
+  new_clock = (Clock_Ptr) xmalloc(sizeof(Clock));
+  new_clock->time = 0.0;
+  return new_clock;
+}
+
+/*
+ * Given a pointer to a simulation_run, find out the current clock time.
+ */
+
+double
+simulation_run_get_time (Simulation_Run_Ptr this_simulation_run)
+{
+  return this_simulation_run->clock->time;
+}
+
+/*
+ * Given a pointer to a simulation_run, set the clock time.
+ */
+
+static
+void simulation_run_set_time (Simulation_Run_Ptr this_simulation_run,
+			      double time)
+{
+  this_simulation_run->clock->time = time;
+}
+
+/*
+ * Given a pointer to a simulation_run, get simulation_run data.
+ */
+
+void *
+simulation_run_data (Simulation_Run_Ptr this_simulation_run)
+{
+  return this_simulation_run->data;
+}
+
+/*
+ * Given a pointer to a simulation_run, put simulation_run data.
+ */
+
+void
+simulation_run_set_data (Simulation_Run_Ptr this_simulation_run, void * data)
+{
+  this_simulation_run->data = data;
+}
+
+
+/*
+ * This function makes an entry on the event list. It must be passed the
+ * simulation_run, the type of event, and the time that the event is to occur. An
+ * event_contents pointer can also be passed which can be recovered when the
+ * event function is called. The event list itself is a double linked list.
+ */
+
+long int
+simulation_run_schedule_event(Simulation_Run_Ptr simulation_run,
+			      Event new_event, double new_event_time)
+{
+  Event_Container_Ptr current_container, new_container, 
+    next_container;
+
+  double current_time;
+  Eventlist_Ptr event_list;
+  static long int event_id = 1;
+
+  current_time = simulation_run_get_time(simulation_run);
+  event_list = simulation_run_get_eventlist(simulation_run);
+
+  TRACE(printf("At %.3f : ", current_time);)
+  TRACE(event_print_type(new_event);)
+  TRACE(printf("Scheduled for  %.3f \n", new_event_time);)
+
+  /* Test for time scheduling error. */
+  if (new_event_time < current_time) {
+    printf("Error: Scheduling backwards in time: ");
+    printf("Event time = %f (Clock time = %f) \n", new_event_time, 
+    current_time);
+    printf("Event scheduled = \"%s\"\n", new_event.description);
+    exit(1);
+  }
+
+  new_container = (Event_Container_Ptr) xmalloc(sizeof(Event_Container));
+  new_container->occurrence_time = new_event_time;
+  new_container->event = new_event;
+  new_container->next_container = NULL;
+  new_container->previous_container = NULL;
+  new_container->event_id = event_id;
+
+  if (event_list->size == 0) {
+    /* The list is empty. */
+    event_list->front_ptr = new_container;
+    event_list->back_ptr = new_container;
+    event_list->size++;
+    return event_id++;
+  }
+
+  if (event_list->front_ptr->occurrence_time > new_event_time) {
+    /* Add to front of the list. */
+    event_list->front_ptr->previous_container = new_container;
+    new_container->next_container = event_list->front_ptr;
+    event_list->front_ptr = new_container;
+
+    event_list->size++;
+    return event_id++;
+  }
+
+  if (event_list->back_ptr->occurrence_time <= new_event_time) {
+    /* Add to the back of the list. */
+    event_list->back_ptr->next_container = new_container;
+    new_container->previous_container = event_list->back_ptr;
+    event_list->back_ptr = new_container;
+
+    event_list->size++;
+    return event_id++;
+  }
+
+  /* Add to the middle of the list. */
+  current_container = event_list->front_ptr;
+  next_container = event_list->front_ptr->next_container;
+
+  while(next_container->occurrence_time <= new_event_time) {
+    current_container = next_container;
+    next_container = current_container->next_container;
+  }
+  current_container->next_container = new_container;
+  new_container->previous_container = current_container;
+  next_container->previous_container = new_container;
+  new_container->next_container = next_container;
+
+  event_list->size++;
+  return event_id++;
+}
+
+/*
+ * Given an existing event id, remove the corresponding event from the event
+ * list. The event content pointer is returned (which could be NULL). If the
+ * requested event does not exist, it will return a NULL pointer.
+ */
+
+void *
+simulation_run_deschedule_event(Simulation_Run_Ptr simulation_run,
+				long int event_id)
+{
+  int i;
+  Event_Container_Ptr current_container, found_container=NULL,
+    next_container, previous_container;
+  void * content_ptr = NULL;
+
+  Eventlist_Ptr event_list;
+
+  event_list = simulation_run_get_eventlist(simulation_run);
+
+  current_container = event_list->front_ptr;
+  next_container = current_container->next_container;
+
+  for(i=0; i<event_list->size; i++) {
+
+    if(current_container->event_id == event_id) {
+
+      found_container = current_container;
+      previous_container = found_container->previous_container;
+      next_container = found_container->next_container;
+
+      /* Front of list. Adjust the front pointer. */
+      if (event_list->front_ptr == found_container)
+        event_list->front_ptr = next_container;
+
+      /* Back of list. Adjust the back pointer (could be both fron and
+	 back). */
+      if (event_list->back_ptr == found_container)
+        event_list->back_ptr = previous_container;
+
+      /* If the next event exists, adjust its previous event pointer. */
+      if (next_container != NULL)
+        next_container->previous_container = previous_container;
+
+      /* If the previous event exists, adjust its next event pointer. */
+      if (previous_container != NULL)
+        previous_container->next_container = next_container;
+
+      content_ptr = found_container->data_ptr;
+
+      TRACE(printf("At %.2f : ", simulation_run_get_time(simulation_run));)
+      TRACE(event_print_type(found_container->event);)
+      TRACE(printf("descheduled\n");)
+
+      free((void*) found_container);
+      event_list->size--;
+      break;
+    }
+    current_container = current_container->next_container;
+
+  }
+  return content_ptr;
+}
+
+/*
+ * Retrieve the event at the top of the event list, i.e., the next event to
+ * occur. This is called by execute_next_event which then passes execution to
+ * its event function.
+ */
+
+static Event_Container_Ptr
+simulation_run_get_event(Simulation_Run_Ptr simulation_run)
+{
+  Eventlist_Ptr event_list;
+  Event_Container_Ptr top_container;
+
+  event_list = simulation_run_get_eventlist(simulation_run);
+
+  if (event_list->size == 0) {
+    printf("*** Error: No Events are scheduled ... cannot continue! ***\n");
+    exit(1);
+  }
+
+  top_container = event_list->front_ptr;
+
+  if (event_list->size == 1) {
+    event_list->front_ptr = NULL;
+    event_list->back_ptr = NULL;
+    event_list->size--;
+  } else {
+
+    top_container->next_container->previous_container = NULL;
+    event_list->front_ptr = top_container->next_container;
+    event_list->size--;
+  }
+  return (top_container);
+}
+
+/*
+ * Get the next event from the event list and pass program execution to its
+ * event function.
+ */
+
+void
+simulation_run_execute_event(Simulation_Run_Ptr simulation_run)
+{
+  Event_Container_Ptr current_container;
+
+  current_container = simulation_run_get_event(simulation_run);
+  simulation_run_set_time(simulation_run, 
+			  current_container->occurrence_time);
+
+  TRACE(printf("\n");)
+  TRACE(event_print_type(current_container->event);)
+  TRACE(printf("occurring at %.3f\n", simulation_run_get_time(simulation_run));)
+
+  (*(current_container->event.function))(simulation_run,
+			current_container->event.attachment);
+  xfree(current_container);
+}
+
+/*
+ * Free up simulation_run memory.
+ */
+
+void
+simulation_run_free_memory(Simulation_Run_Ptr this_simulation_run)
+{
+  Eventlist_Ptr event_list;
+
+  /* Clean out the event list. */
+  event_list = this_simulation_run->eventlist;
+
+  while (event_list->size > 0) {
+    xfree((void*) simulation_run_get_event(this_simulation_run));
+  }
+
+  /* Clean up the simulation_run. */
+  xfree(this_simulation_run->eventlist);
+  xfree(this_simulation_run->clock);
+  xfree(this_simulation_run);
+}
+
+/*
+ * Functions for handling various event list operations.
+ *
+ * Create a new event list. This is called when a simulation_run is
+ * created. The event list is included in the simulation_run.
+ */
+
+static Eventlist_Ptr
+eventlist_new(void)
+{
+  Eventlist_Ptr new_event_list;
+
+  new_event_list = (Eventlist_Ptr) xmalloc(sizeof(Eventlist));
+
+  new_event_list->front_ptr = NULL;
+  new_event_list->back_ptr = NULL;
+  new_event_list->size = 0;
+  return new_event_list;
+}
+
+/*
+ * Get a pointer to the eventlist. This is intended for use only by simlib.
+ */
+
+static Eventlist_Ptr
+simulation_run_get_eventlist(Simulation_Run_Ptr simulation_run)
+{
+  return simulation_run->eventlist;
+}
+
+/*
+ * Some functions that are only needed if trace is enabled.
+ */
+
+#ifdef TRACE_ON
+
+static void
+event_print_type(Event event)
+{
+  printf("%s ", event.description);
+}
+
+#endif /* TRACE_ON */
+
+/*
+ * FIFO queue functions
+ *
+ * Make a new (empty) FIFO queue. This will return a pointer to the created
+ * Fifoqueue. The FIFO queue is a singly linked list.
+ */
+
+Fifoqueue_Ptr
+fifoqueue_new(void)
+{
+  Fifoqueue_Ptr queue_id;
+
+  queue_id = (Fifoqueue_Ptr) xmalloc(sizeof(Fifoqueue));
+  queue_id->size = 0;
+  queue_id->front_ptr = NULL;
+  queue_id->back_ptr  = NULL;
+  return queue_id;
+}
+
+/*
+ * Put something into a FIFO queue. Whatever it is should be cast to a void
+ * pointer.
+ */
+
+void
+fifoqueue_put(Fifoqueue_Ptr queue_ptr, void * content_ptr)
+{
+  Queue_Container_Ptr queue_container_ptr;
+
+  queue_container_ptr = (Queue_Container_Ptr) xmalloc(sizeof(Queue_Container));
+  queue_container_ptr->content_ptr = content_ptr;
+  queue_container_ptr->next_ptr = NULL;
+
+  if (queue_ptr->size == 0) {
+    queue_ptr->front_ptr = queue_container_ptr;
+    queue_ptr->back_ptr =  queue_container_ptr;
+  }
+  else {
+    queue_ptr->back_ptr->next_ptr = queue_container_ptr;
+    queue_ptr->back_ptr = queue_container_ptr;
+  }
+  queue_ptr->size++;
+}
+
+/*
+ * Take something out of a FIFO queue. Whatever it is should be cast to a void
+ * pointer.
+ */
+
+void *
+fifoqueue_get(Fifoqueue_Ptr queue_ptr)
+{
+  Queue_Container_Ptr removed_container_ptr;
+  void* content_ptr;
+
+  if (queue_ptr->size > 0) {
+    removed_container_ptr = queue_ptr->front_ptr;
+    queue_ptr->front_ptr = removed_container_ptr->next_ptr;
+    content_ptr = removed_container_ptr->content_ptr;
+    free((char*) removed_container_ptr);
+
+    if(queue_ptr->size == 1) queue_ptr->back_ptr = NULL;
+    queue_ptr->size--;
+  }
+  else {
+    content_ptr = NULL;
+  }
+  return content_ptr;
+}
+
+/*
+ * Get the number of objects currently in the Fifoqueue.
+ */
+
+int
+fifoqueue_size(Fifoqueue_Ptr queue_ptr)
+{
+  return queue_ptr->size;
+}
+
+/*
+ * Get a pointer to the object at the front of the Fifoqueue.
+ */
+
+void*
+fifoqueue_see_front(Fifoqueue_Ptr queue_ptr)
+{
+  return queue_ptr->front_ptr->content_ptr;
+}
+
+/*
+ * Server functions.
+ *
+ * Create and return a pointer to an empty server. The server is marked FREE.
+ */
+
+Server_Ptr
+server_new(void)
+{
+  Server_Ptr server_ptr;
+
+  server_ptr = (Server_Ptr) xmalloc(sizeof(Server));
+  server_ptr->customer_in_service = NULL;
+  server_ptr->state = FREE;
+  return server_ptr;
+}
+
+/*
+ * Pass a server pointer and an object pointer to place the object in the
+ * server. The server is marked BUSY.
+ */
+
+void
+server_put(Server_Ptr server, void* content_ptr)
+{
+  if (server_state(server) == BUSY) {
+      printf("Error: Cannot put into busy server.\n");
+      exit(1);
+    }
+
+  server->customer_in_service = content_ptr;
+  server->state = BUSY;
+}
+
+/*
+ * Remove whatever is in the server. The simulation_run will exit if this is
+ * called when the server is FREE. So the server state should be tested first to
+ * be sure.
+ */
+
+void *
+server_get(Server_Ptr server)
+{
+  void *entry;
+
+  if (server_state(server) == FREE) {
+      printf("Error: Cannot get from free server.\n");
+      exit(1);
+    }
+
+  entry = server->customer_in_service;
+  server->customer_in_service = NULL;
+  server->state = FREE;
+  return entry;
+}
+
+/*
+ * Test if the server is FREE or BUSY.
+ */
+
+Server_State
+server_state(Server_Ptr a_server)
+{
+  return(a_server->state);
+}
+
+/*
+ * Random number generator functions.
+ */
+
+/*
+ * Functions for random streams, which permit multiple overlapping random number
+ * generator streams (and seeds) at once.
+ */
+
+Rand_Stream_Ptr
+rand_stream_new(unsigned seed)
+{
+  Rand_Stream_Ptr new_stream;
+
+  new_stream = (Rand_Stream_Ptr) xmalloc(sizeof(Rand_Stream));
+  rand_stream_initialize(new_stream, seed);
+  return new_stream;
+}
+
+void
+rand_stream_initialize(Rand_Stream_Ptr rand_stream, unsigned seed)
+{
+  rand_stream->rand_max = 32767;
+  rand_stream->seed  = seed;
+  rand_stream->next = seed;
+}
+
+/*
+ * Use our own code for rand so that we can make it thread-safe. This generator
+ * is a pretty poor one but sufficient for our purposes.
+ */
+
+unsigned
+rand_stream_get(Rand_Stream_Ptr rand_stream)
+{
+  rand_stream->next = rand_stream->next * 1103515245 + 12345;
+  return((unsigned)(rand_stream->next/65536) % rand_stream->rand_max);
+}
+
+double
+rand_stream_uniform_generator(Rand_Stream_Ptr rand_stream)
+{
+  double r;
+
+  do {
+    r = (double) rand_stream_get(rand_stream)/(double)rand_stream->rand_max;
+  } while (r == 1 || r == 0);
+
+if (r > 1.0) {
+  printf ("***** ERROR: Random() out of bounds! ***** \n");
+  exit(0);
+ } else return r;
+}
+
+double
+rand_stream_exponential_generator(Rand_Stream_Ptr rand_stream, double mean)
+{
+  double u = 0.0;
+
+  while (u == 0.0 || u == 1) u = rand_stream_uniform_generator(rand_stream);
+  return -1.0 * log(u) * mean;
+}
+
+void
+random_generator_initialize(unsigned iseed)
+{
+  srand(iseed);
+}
+
+/*
+ * Generate a random number uniformly distributed over (0, 1).
+ */
+
+double
+uniform_generator(void)
+{
+  double r;
+
+  do {
+    r = (double) rand()/(double) RAND_MAX;
+  } while (r == 1 || r == 0);
+
+if (r > 1.0) {
+  printf ("***** ERROR: Random() out of bounds! ***** \n");
+  exit(0);
+ } else return r;
+}
+
+/*
+ * Generate exponentially distributed random numbers.
+ */
+
+double
+exponential_generator(double mean)
+{
+  double u = 0.0;
+
+  while (u == 0.0 || u == 1) u = uniform_generator();
+  return -1.0 * log(u) * mean;
+}
+
+/*
+ * Create a front-end fo malloc that performs out-of-memory testing.
+ */
+
+void *
+xmalloc(unsigned size)
+{
+  void * a_ptr;
+
+  if((a_ptr = (void *) malloc(size)) != NULL) return a_ptr;
+  else {
+    printf("***** ERROR: Out of memory ***** \n");
+    exit(1);
+  }
+}
+
+/*
+ * Create a front-end fo calloc that performs out-of-memory testing.
+ */
+
+void *
+xcalloc(unsigned num, unsigned size)
+{
+  void * a_ptr;
+
+  if((a_ptr = (void *) calloc(num, size)) != NULL) return a_ptr;
+  else {
+    printf(" ***** WARNING: Out of memory ***** \n");
+    exit(1);
+  }
+}
+
+/*
+ * Create a front-end for free that checks for null pointers.
+ */
+
+void
+xfree(void * ptr)
+{
+  if(ptr == NULL) {
+    printf("Warning: Attempting to free a NULL pointer.\n");
+  }
+  else free(ptr);
+}
+
+
+
+
+/*
+ * 
+ * Simlib Simulation_Run Library
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/******************************************************************************/
+
+#ifndef _SIMLIB_H_
+#define _SIMLIB_H_
+
+/******************************************************************************/
+
+#include <stdlib.h>
+
+/******************************************************************************/
+
+/*
+ * Declare the objects below so that the typedef ordering does not
+ * matter.
+ */
+
+struct _simulation_run_;
+struct _clock_;
+struct _event_;
+struct _event_container_;
+struct _event_list_;
+
+/*
+ * Define some convenient typedefs to use when writing simulation_runs.
+ *
+ * The simulation_run consists of an event list, clock and a pointer for
+ * passing user data between various functions.
+ */
+
+typedef struct _simulation_run_
+{
+  struct _eventlist_ * eventlist;
+  struct _clock_ * clock;
+  void * data;
+} Simulation_Run, * Simulation_Run_Ptr;
+
+typedef struct _clock_
+{
+  double time;
+} Clock, * Clock_Ptr;
+
+/*
+ * Typedefs defined for various event processing functions. These are used
+ * within simlib itself and not by user code.
+ */
+
+typedef struct _event_
+{
+  const char * description;
+  void (* function)(struct _simulation_run_*, void *);
+  void * attachment;
+} Event, * Event_Ptr;
+
+typedef struct _event_container_
+{
+  struct _event_container_ * next_container;
+  struct _event_container_ * previous_container;
+  struct _event_ event;
+  double occurrence_time;
+  void * data_ptr;
+  long int event_id;
+} Event_Container, * Event_Container_Ptr;
+
+typedef struct _eventlist_
+{
+  struct _event_container_ * front_ptr;
+  struct _event_container_ * back_ptr;
+  int size;
+} Eventlist, * Eventlist_Ptr;
+
+/******************************************************************************/
+
+/*
+ * FIFO queue object keeps the queue size and contains pointers to containers
+ * at the front and back of the queue. The queue container objects are kept on
+ * a singly linked list. Each container has a content pointer that tracks the
+ * object placed on the FIFO queue.
+ */
+
+struct _queue_container_;
+
+typedef struct _fifoqueue_
+{
+  struct _queue_container_ * front_ptr;
+  struct _queue_container_ * back_ptr;
+  int size;
+} Fifoqueue, * Fifoqueue_Ptr;
+
+typedef struct _queue_container_
+{
+  void * content_ptr;
+  struct _queue_container_ * next_ptr;
+} Queue_Container, *Queue_Container_Ptr;
+
+/******************************************************************************/
+
+/*
+ * Server object and definitions. 
+ */
+
+typedef enum{FREE, BUSY} Server_State;
+
+typedef struct _server_
+{
+  Server_State state;
+  void * customer_in_service;
+} Server, * Server_Ptr;
+
+/******************************************************************************/
+
+/*
+ * Random Number Generation
+ *
+ * The generator uses the library function rand() which must return an int
+ * within the range 1 to RAND_MAX.  Note: RAND_MAX is defined for this purpose
+ * in ANSI C.)
+ */
+
+/*
+ * _rand_stream_ permits having multiple rand() streams at once. Multiple
+ * Rand_Stream objects can be created and accessed via rand_stream_get.
+ */
+
+typedef struct _rand_stream_
+{
+  unsigned seed;
+  unsigned rand_max;
+  unsigned next;
+} Rand_Stream, * Rand_Stream_Ptr;
+
+/* #ifndef RAND_MAX
+ * #define RAND_MAX 2147483647.0
+ * #endif */
+
+/******************************************************************************/
+
+/*
+ * Prototypes for functions that are available and defined in simlib.c.
+ */
+
+Simulation_Run_Ptr
+simulation_run_new(void);
+
+void
+simulation_run_execute_event(Simulation_Run_Ptr);
+
+double
+simulation_run_get_time(Simulation_Run_Ptr);
+
+void *
+simulation_run_data(Simulation_Run_Ptr);
+
+void
+simulation_run_set_data(Simulation_Run_Ptr, void*);
+
+/* Create an alias for simulation_run_set_data. */
+#define simulation_run_attach_data simulation_run_set_data
+
+long int
+simulation_run_schedule_event(Simulation_Run_Ptr, Event, double);
+
+void *
+simulation_run_deschedule_event(Simulation_Run_Ptr, long int);
+
+Fifoqueue_Ptr
+fifoqueue_new(void);
+
+void
+fifoqueue_put(Fifoqueue_Ptr, void*);
+
+void *
+fifoqueue_get(Fifoqueue_Ptr);
+
+int
+fifoqueue_size(Fifoqueue_Ptr);
+
+void *
+fifoqueue_see_front(Fifoqueue_Ptr);
+
+Server_Ptr
+server_new(void);
+
+void
+server_put(Server_Ptr, void*);
+
+void *
+server_get(Server_Ptr);
+
+Server_State
+server_state(Server_Ptr);
+
+double
+exponential_generator(double);
+
+double
+uniform_generator(void);
+
+void
+random_generator_initialize(unsigned);
+
+Rand_Stream_Ptr
+rand_stream_new(unsigned);
+
+unsigned
+rand_stream_get(Rand_Stream_Ptr);
+
+void
+rand_stream_initialize(Rand_Stream_Ptr, unsigned);
+
+double
+rand_stream_uniform_generator(Rand_Stream_Ptr);
+
+double
+rand_stream_exponential_generator(Rand_Stream_Ptr, double);
+
+void *
+xmalloc(unsigned);
+
+void *
+xcalloc(unsigned, unsigned);
+
+void
+xfree(void*);
+
+void
+simulation_run_free_memory(Simulation_Run_Ptr);
+
+/******************************************************************************/
+
+#endif /* simlib.h */
+
+
+
+/*
+ * Simulation of the ALOHA Protocol
+ * 
+ * Copyright (C) 2014 Terence D. Todd Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/*******************************************************************************/
+
+#ifndef _SIMPARAMETERS_H_
+#define _SIMPARAMETERS_H_
+
+/*******************************************************************************/
+
+#define NUMBER_OF_STATIONS 10
+#define MEAN_PACKET_DURATION 1      /* normalized packet Tx time */
+#define PACKET_ARRIVAL_RATE 0.1     /* packets per Tx time */
+#define MEAN_BACKOFF_DURATION 5    /* in units of packet transmit time, Tx */
+#define RUNLENGTH 70000000
+#define BLIPRATE 100000
+
+/* Comma separated list of random seeds to run. */
+#define RANDOM_SEED_LIST 400440917, 400440613
+
+/*******************************************************************************/
+
+#endif /* simparameters.h */
+
+
+
+
+
+
+
+/*
+ * 
+ * Simlib Simulation Library
+ * 
+ * Copyright (C) 2014 Terence D. Todd
+ * Hamilton, Ontario, CANADA
+ * todd@mcmaster.ca
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+/**********************************************************************/
+
+#ifndef _TRACE_H_
+#define _TRACE_H_
+
+/**********************************************************************/
+
+#define DO(x) x
+#define IGNORE(x)
+
+/* Uncomment the next statement to activate trace. */
+/* #define TRACE_ON */
+
+#ifdef TRACE_ON
+#define TRACE DO
+#else
+#define TRACE IGNORE
+#endif
+
+#define TRACEF(a) { printf("%s @ line %u\n", __FILE__, __LINE__); \
+    a;								  \
+    fflush(stdout); }
+
+/**********************************************************************/
+
+#endif /* trace.h */
+
+
