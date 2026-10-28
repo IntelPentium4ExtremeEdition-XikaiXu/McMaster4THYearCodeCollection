@@ -194,3 +194,23 @@ function [output_dtft] = calculate_dtft(x,w)
     end
 
 end
+
+% Read the CSV file
+data = readmatrix('result.csv');
+
+% Extract data
+real_part = data(:,1);
+imag_part = data(:,2);
+amp = data(:,3);
+n = data(:,4);
+
+% Plot
+figure;
+plot(n, real_part, n, imag_part, n, amp);
+
+xlabel('Index');
+ylabel('Value');
+title('CSV Data vs. Index');
+legend('Real', 'Imaginary', 'Amplitude');
+grid on;
+
