@@ -33,7 +33,7 @@ void convolution(float* real_ref, float* imag_ref, float* real_rec, float* imag_
 		for (k=0; k < num_samples; k++){
 			int ref_i = k-n;
 			if (ref_i < 0){
-				ref_i = num_samples - (n - k);
+				ref_i = num_samples - (n - k); // This is the loop conv, used for periodic, linear conv used for small piece
 			}
 			output[n].real += real_ref[ref_i]*real_rec[k] + imag_ref[ref_i]*imag_rec[k];
 			output[n].imag += real_ref[ref_i]*imag_rec[k] - imag_ref[ref_i]*real_rec[k];
@@ -43,7 +43,27 @@ void convolution(float* real_ref, float* imag_ref, float* real_rec, float* imag_
 
 void save_results(COMPLEX* data, int N)
 {
-	//need to fill
+//	FILE *save = fopen("result.csv");
+	int index;
+//	fprintf(save,"header","real","imag","amp","num","index");
+//	for(index = 0; index < N; ++index) {
+//		fwrite(save, *data[index].real, *data[index].imag, sqrt(*data[index].real**2 + *data[index].imag**2), *data[index], index);
+//	}
+//
+//	fclose("result.csv");
+
+    FILE *save = fopen("result.csv", "w");
+    printf("LOL");
+    fprintf(save, "real,imag,amp,index\n");
+    for (index = 0; index < N; ++index) {
+        double real = data[index].real;
+        double imag = data[index].imag;
+        double amp = sqrt(real * real + imag * imag);
+        fprintf(save, "%f,%f,%f,%d\n", real, imag, amp, index);
+    }
+    fclose(save);
+
+
 }
 
 
@@ -70,10 +90,10 @@ interrupt void c_int11()
 		sig = sqrt(range_signal[interrupt_count].real*range_signal[interrupt_count].real + range_signal[interrupt_count].imag*range_signal[interrupt_count].imag);	
 	}
 	else if (interrupt_count < NUM_SAMPLES + num_gaps_to_insert){
-		sig = -0.5*MAX_SIGNAL_VALUE;//0;	
+		sig = -0.5*MAX_SIGNAL_VALUE;//0;
 	}
 	
-	interrupt_count = interrupt_count+1;
+	interrupt_count = interrupt_count+1;// freq based on the clock generator of the silicon
 	if (interrupt_count >= NUM_SAMPLES + num_gaps_to_insert){
 		interrupt_count = 0;
 	}
