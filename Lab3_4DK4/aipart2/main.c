@@ -1,24 +1,14 @@
 #include <stdio.h>
-#include "lab_seeds.h"
 #include "simparameters.h"
 #include "sim_run.h"
-
-static const int station_backoff_configs[][2] = {
-  {10, 5}, {10, 10}, {10, 20},
-  {5, 3}, {5, 5}, {5, 7}
-};
-
-static const double arrival_rates[] = {
-  0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40
-};
+#include "part2_settings.h"
 
 int
 main(void)
 {
-  unsigned random_seed;
-  unsigned random_seeds[] = {RANDOM_SEED_LIST, 0};
   FILE *csv;
   size_t i, j, s;
+  size_t run_index = 0;
   Aloha_Run_Config cfg;
   Aloha_Run_Result result;
 
@@ -37,37 +27,40 @@ main(void)
   cfg.runlength = SWEEP_RUNLENGTH;
   cfg.print_results = 0;
 
-  for(i = 0; i < sizeof(station_backoff_configs)/sizeof(station_backoff_configs[0]); i++) {
-    cfg.number_of_stations = station_backoff_configs[i][0];
-    cfg.mean_backoff_duration = (double) station_backoff_configs[i][1];
+  for(i = 0; i < PART2_NUM_CONFIGS; i++) {
+    cfg.number_of_stations = part2_configs[i][0];
+    cfg.mean_backoff_duration = (double) part2_configs[i][1];
 
-    for(j = 0; j < sizeof(arrival_rates)/sizeof(arrival_rates[0]); j++) {
-      cfg.packet_arrival_rate = arrival_rates[j];
+    for(j = 0; j < PART2_NUM_RATES; j++) {
+      cfg.packet_arrival_rate = part2_arrival_rates[j];
 
-      for(s = 0; (random_seed = random_seeds[s++]) != 0; ) {
-	cfg.random_seed = random_seed;
+      for(s = 0; s < PART2_NUM_SEEDS; s++) {
+	cfg.random_seed = part2_seeds[s];
 	aloha_run_simulation(&cfg, &result);
 	fprintf(csv, "%d,%d,%.6f,%u,%.9f,%.9f,%.9f,%.9f\n",
 		cfg.number_of_stations,
-		station_backoff_configs[i][1],
+		part2_configs[i][1],
 		cfg.packet_arrival_rate,
 		cfg.random_seed,
 		result.mean_delay,
 		result.collisions_per_success,
 		result.throughput,
 		result.aggregate_load_G);
-	printf("Part2: N=%d backoff=%d lambda=%.2f seed=%u S=%.4f G=%.4f\n",
+	printf("Part2 %zu/%d: N=%d backoff=%d lambda=%.2f seed=%u S=%.4f G=%.4f D=%.3f\n",
+	       ++run_index,
+	       PART2_NUM_RUNS,
 	       cfg.number_of_stations,
-	       station_backoff_configs[i][1],
+	       part2_configs[i][1],
 	       cfg.packet_arrival_rate,
 	       cfg.random_seed,
 	       result.throughput,
-	       result.aggregate_load_G);
+	       result.aggregate_load_G,
+	       result.mean_delay);
       }
     }
   }
 
   fclose(csv);
-  puts("Wrote results.csv");
+  printf("Wrote results.csv (%d runs). Plots: python3 plot_results.py\n", PART2_NUM_RUNS);
   return 0;
 }

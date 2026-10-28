@@ -1,27 +1,37 @@
 import csv
+from collections import defaultdict
+
 import matplotlib.pyplot as plt
 
 rows = list(csv.DictReader(open("part1_results.csv", newline="")))
-for n in sorted({int(r["stations"]) for r in rows}):
-    plt.figure()
-    subset = [r for r in rows if int(r["stations"]) == n]
-    for b in sorted({int(r["backoff"]) for r in subset}):
-        pts = sorted(
-            (r for r in subset if int(r["backoff"]) == b),
-            key=lambda r: float(r["arrival_rate"]),
-        )
-        plt.plot(
-            [float(r["arrival_rate"]) for r in pts],
-            [float(r["mean_delay"]) for r in pts],
-            marker="o",
-            label=f"backoff={b}",
-        )
-    plt.xlabel("Arrival rate lambda (per station)")
-    plt.ylabel("Mean delay D")
-    plt.title(f"Part 1: D vs lambda ({n} stations)")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(f"part1_delay_N{n}.png", dpi=160)
+if not rows:
+    raise SystemExit("Run ./aloha first.")
 
-print("Wrote part1_delay_N5.png and part1_delay_N10.png")
+# Average the two seeds. Lambda is fixed; x-axis is mean backoff.
+buckets = defaultdict(list)
+lam = float(rows[0]["arrival_rate"])
+for r in rows:
+    buckets[(int(r["stations"]), int(float(r["backoff"])))].append(float(r["mean_delay"]))
+
+written = []
+for n, title_backoffs in ((10, "5, 10, 20"), (5, "3, 5, 7")):
+    pts = sorted((k for k in buckets if k[0] == n), key=lambda k: k[1])
+    if not pts:
+        print(f"Warning: no N={n} rows")
+        continue
+    plt.figure()
+    plt.plot(
+        [k[1] for k in pts],
+        [sum(buckets[k]) / len(buckets[k]) for k in pts],
+        marker="o",
+    )
+    plt.xlabel("Mean backoff duration")
+    plt.ylabel("Mean delay D")
+    plt.title(f"Part 1: D vs backoff (N={n}, lambda={lam:g})")
+    plt.grid(True)
+    plt.tight_layout()
+    out = f"part1_delay_N{n}.png"
+    plt.savefig(out, dpi=160)
+    written.append(out)
+
+print("Wrote " + ", ".join(written))

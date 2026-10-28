@@ -17,4 +17,6 @@
 #define MAX_BEB_COLLISION_COUNT 10
 #define PERSISTENT_STATION_ID -1
 
+/* Part 2: fixed backoff only; BEB and persistent station stay off. */
+
 #endif /* simparameters.h */

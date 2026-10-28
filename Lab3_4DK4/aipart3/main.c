@@ -1,27 +1,14 @@
 #include <stdio.h>
-#include "lab_seeds.h"
 #include "simparameters.h"
 #include "sim_run.h"
-
-static const struct {
-  int stations;
-  double fixed_backoff;
-} part3_configs[] = {
-  {10, 10.0},
-  {5, 5.0}
-};
-
-static const double arrival_rates[] = {
-  0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40
-};
+#include "part3_settings.h"
 
 int
 main(void)
 {
-  unsigned random_seed;
-  unsigned random_seeds[] = {RANDOM_SEED_LIST, 0};
   FILE *csv;
   size_t i, j, s, mode;
+  size_t run_index = 0;
   Aloha_Run_Config cfg;
   Aloha_Run_Result result;
   const char *mode_name;
@@ -40,19 +27,19 @@ main(void)
   cfg.runlength = SWEEP_RUNLENGTH;
   cfg.print_results = 0;
 
-  for(i = 0; i < sizeof(part3_configs)/sizeof(part3_configs[0]); i++) {
+  for(i = 0; i < PART3_NUM_CONFIGS; i++) {
     cfg.number_of_stations = part3_configs[i].stations;
     cfg.mean_backoff_duration = part3_configs[i].fixed_backoff;
 
-    for(mode = 0; mode < 2; mode++) {
+    for(mode = 0; mode < PART3_NUM_MODES; mode++) {
       cfg.use_binary_exponential_backoff = (int) mode;
       mode_name = mode ? "BEB" : "fixed";
 
-      for(j = 0; j < sizeof(arrival_rates)/sizeof(arrival_rates[0]); j++) {
-	cfg.packet_arrival_rate = arrival_rates[j];
+      for(j = 0; j < PART3_NUM_RATES; j++) {
+	cfg.packet_arrival_rate = part3_arrival_rates[j];
 
-	for(s = 0; (random_seed = random_seeds[s++]) != 0; ) {
-	  cfg.random_seed = random_seed;
+	for(s = 0; s < PART3_NUM_SEEDS; s++) {
+	  cfg.random_seed = part3_seeds[s];
 	  aloha_run_simulation(&cfg, &result);
 	  fprintf(csv,
 		  "%s,%d,%.0f,%.6f,%u,%.9f,%.9f,%.9f,%.9f\n",
@@ -65,7 +52,9 @@ main(void)
 		  result.throughput,
 		  result.aggregate_load_G,
 		  result.collisions_per_success);
-	  printf("Part3: %s N=%d lambda=%.2f seed=%u D=%.3f S=%.4f\n",
+	  printf("Part3 %zu/%d: %s N=%d lambda=%.2f seed=%u D=%.3f S=%.4f\n",
+		 ++run_index,
+		 PART3_NUM_RUNS,
 		 mode_name,
 		 cfg.number_of_stations,
 		 cfg.packet_arrival_rate,
@@ -78,6 +67,7 @@ main(void)
   }
 
   fclose(csv);
-  puts("Wrote comparison.csv");
+  printf("Wrote comparison.csv (%d runs). Plots: python3 plot_comparison.py\n",
+	 PART3_NUM_RUNS);
   return 0;
 }
