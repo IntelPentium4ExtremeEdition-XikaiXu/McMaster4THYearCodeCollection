@@ -245,6 +245,9 @@ void
 xfree(void*);
 
 void
+simulation_memory_release(void);
+
+void
 simulation_run_free_memory(Simulation_Run_Ptr);
 
 /******************************************************************************/

@@ -29,10 +29,12 @@
 
 #define NUMBER_OF_STATIONS 10
 #define MEAN_PACKET_DURATION 1      /* normalized packet Tx time */
-#define PACKET_ARRIVAL_RATE 0.1     /* packets per Tx time */
+#define PACKET_ARRIVAL_RATE 1     /* packets per Tx time */
 #define MEAN_BACKOFF_DURATION 5    /* in units of packet transmit time, Tx */
-#define RUNLENGTH 70000000
+#define RUNLENGTH 10000000 //fast sim
 #define BLIPRATE 100000
+/* Stop a run before the waiting-packet queue can exhaust RAM. */
+#define MAX_LIVE_PACKETS 2000000
 
 /* Comma separated list of random seeds to run. */
 #define RANDOM_SEED_LIST 400440917, 400440613

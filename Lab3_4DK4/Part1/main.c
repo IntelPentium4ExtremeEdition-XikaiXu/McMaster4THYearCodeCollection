@@ -35,6 +35,48 @@
 
 /*******************************************************************************/
 
+/* logspace(0.01, 1.00, 15): dense near 0, then stretches to 1 */
+static const double arrival_rates[] = {
+  0.0100, 0.0139, 0.0193, 0.0268, 0.0373,
+  0.0518, 0.0720, 0.1000, 0.1389, 0.1931,
+  0.2683, 0.3728, 0.5179, 0.7197, 1.0000
+};
+
+static int
+save_results(FILE *file, Simulation_Run_Ptr simulation_run)
+{
+  Simulation_Run_Data_Ptr data;
+  double mean_delay;
+  double collisions_per_success;
+
+  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
+  mean_delay = data->accumulated_delay / data->number_of_packets_processed;
+  collisions_per_success =
+    (double) data->number_of_collisions / data->number_of_packets_processed;
+
+  if (fprintf(file, "%d,%.0f,%.4f,%u,%ld,%ld,%.6f,%.6f,%ld\n",
+	      data->number_of_stations,
+	      data->mean_backoff_duration,
+	      data->packet_arrival_rate,
+	      data->random_seed,
+	      data->arrival_count,
+	      data->number_of_packets_processed,
+	      mean_delay,
+	      collisions_per_success,
+	      data->arrival_count - data->number_of_packets_processed) < 0) {
+    return 1;
+  }
+  fflush(file);
+
+  printf("N=%d backoff=%.0f lambda=%.4f seed=%u D=%.3f\n",
+	 data->number_of_stations,
+	 data->mean_backoff_duration,
+	 data->packet_arrival_rate,
+	 data->random_seed,
+	 mean_delay);
+  return 0;
+}
+
 int
 main(void)
 {
@@ -44,12 +86,30 @@ main(void)
 
   Simulation_Run_Ptr simulation_run;
   Simulation_Run_Data data;
-  int i, j=0;
+  FILE *results;
+  int config, station, seed_index, lambda_step;
 
-  int matrix[6] = {(10,5),(10,10),(10,20),(5,3),(5,5),(5,7)};
-  for (int i = 0 ; i < 6;i++) {
+  results = fopen("part1_results.csv", "w");
+  if (results == NULL) {
+    perror("part1_results.csv");
+    return 1;
+  }
+  fprintf(results,
+	  "stations,mean_backoff,lambda,seed,arrivals,successes,mean_delay,collisions_per_success,live_packets\n");
+
+  int matrix[6][2] = {{10,5},{10,10},{10,20},{5,3},{5,5},{5,7}};
+  for (config = 0 ; config < 6; config++) {
+    int number_of_stations = matrix[config][0];
+    double mean_backoff_duration = matrix[config][1];
+
+    for (lambda_step = 0;
+         lambda_step < (int) (sizeof arrival_rates / sizeof arrival_rates[0]);
+         lambda_step++) {
+      double packet_arrival_rate = arrival_rates[lambda_step];
+
     /* Do a new simulation_run for each random number generator seed. */
-    while ((random_seed = RANDOM_SEEDS[j++]) != 0) {
+    seed_index = 0;
+    while ((random_seed = RANDOM_SEEDS[seed_index++]) != 0) {
 
       /* Set the random generator seed. */
       random_generator_initialize(random_seed);
@@ -62,7 +122,7 @@ main(void)
       simulation_run_set_data(simulation_run, (void *) & data);
 
       /* Create and initalize the stations. */
-      data.stations = (Station_Ptr) xcalloc((unsigned int) matrix[i][0],
+      data.stations = (Station_Ptr) xcalloc((unsigned int) number_of_stations,
               sizeof(Station));
 
       /* Initialize various simulation_run variables. */
@@ -72,14 +132,17 @@ main(void)
       data.number_of_collisions = 0;
       data.accumulated_delay = 0.0;
       data.random_seed = random_seed;
+      data.number_of_stations = number_of_stations;
+      data.mean_backoff_duration = mean_backoff_duration;
+      data.packet_arrival_rate = packet_arrival_rate;
       
       /* Initialize the stations. */
-      for(i=0; i<matrix[i][0]; i++) {
-        (data.stations+i)->id = i;
-        (data.stations+i)->buffer = fifoqueue_new();
-        (data.stations+i)->packet_count = 0;
-        (data.stations+i)->accumulated_delay = 0.0;
-        (data.stations+i)->mean_delay = 0;
+      for(station=0; station<number_of_stations; station++) {
+        (data.stations+station)->id = station;
+        (data.stations+station)->buffer = fifoqueue_new();
+        (data.stations+station)->packet_count = 0;
+        (data.stations+station)->accumulated_delay = 0.0;
+        (data.stations+station)->mean_delay = 0;
       }
 
       /* Create and initialize the channel. */
@@ -88,25 +151,44 @@ main(void)
       /* Schedule initial packet arrival. */
       schedule_packet_arrival_event(simulation_run, 
           simulation_run_get_time(simulation_run) +
-          exponential_generator((double) 1/PACKET_ARRIVAL_RATE));
+          exponential_generator((double) 1/packet_arrival_rate));
 
       /* Execute events until we are finished. */
-      while(data.number_of_packets_processed < RUNLENGTH) {
+      while(data.number_of_packets_processed < RUNLENGTH &&
+            data.arrival_count - data.number_of_packets_processed
+              < MAX_LIVE_PACKETS) {
         simulation_run_execute_event(simulation_run);
+      }
+      if (data.arrival_count - data.number_of_packets_processed
+            >= MAX_LIVE_PACKETS) {
+        printf("\nStopped early: %ld packets still queued "
+               "(successes %ld / %d).\n",
+               data.arrival_count - data.number_of_packets_processed,
+               data.number_of_packets_processed,
+               RUNLENGTH);
       }
 
       /* Print out some results. */
       output_results(simulation_run);
+      if (save_results(results, simulation_run) != 0) {
+        perror("part1_results.csv");
+        fclose(results);
+        cleanup(simulation_run);
+        return 1;
+      }
 
       /* Clean up memory. */
       cleanup(simulation_run);
     }
-
-    /* Pause before finishing. */
-    getchar();
-
-    return 0;
+    }
   }
+
+  fclose(results);
+
+  /* Pause before finishing. */
+  getchar();
+
+  return 0;
 }
 
 

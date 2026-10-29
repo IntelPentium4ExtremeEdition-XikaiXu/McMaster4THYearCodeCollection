@@ -23,8 +23,6 @@
 /*******************************************************************************/
 
 #include "simlib.h"
-#include "main.h"
-#include "simparameters.h"
 #include "cleanup.h"
 
 /*******************************************************************************/
@@ -32,24 +30,11 @@
 void
 cleanup (Simulation_Run_Ptr simulation_run)
 {
-  Simulation_Run_Data_Ptr data;
-  int i;
+  (void) simulation_run;
 
-  data = (Simulation_Run_Data_Ptr) simulation_run_data(simulation_run);
-
-  /* Clean out the stations. */
-  for(i=0; i<NUMBER_OF_STATIONS; i++) {
-    while (fifoqueue_size((data->stations+i)->buffer) > 0) {
-      xfree(fifoqueue_get((data->stations+i)->buffer));
-    }
-  }
-  xfree(data->stations);
-
-  /* Clean out the channel. */
-  xfree(data->channel);
-
-  /* Clean up the simulation_run. */
-  simulation_run_free_memory(simulation_run);
+  /* Packets, queues, events, and the channel live in one arena.
+     Unmap it so the next run does not keep this run's pages. */
+  simulation_memory_release();
 }
 
 

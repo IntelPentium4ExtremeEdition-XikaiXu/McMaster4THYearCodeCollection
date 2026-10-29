@@ -24,6 +24,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/mman.h>
 #include <math.h>
 
 #include "trace.h"
@@ -269,7 +272,7 @@ simulation_run_deschedule_event(Simulation_Run_Ptr simulation_run,
       TRACE(event_print_type(found_container->event);)
       TRACE(printf("descheduled\n");)
 
-      free((void*) found_container);
+      xfree((void*) found_container);
       event_list->size--;
       break;
     }
@@ -461,7 +464,7 @@ fifoqueue_get(Fifoqueue_Ptr queue_ptr)
     removed_container_ptr = queue_ptr->front_ptr;
     queue_ptr->front_ptr = removed_container_ptr->next_ptr;
     content_ptr = removed_container_ptr->content_ptr;
-    free((char*) removed_container_ptr);
+    xfree((char*) removed_container_ptr);
 
     if(queue_ptr->size == 1) queue_ptr->back_ptr = NULL;
     queue_ptr->size--;
@@ -663,45 +666,181 @@ exponential_generator(double mean)
  * Create a front-end fo malloc that performs out-of-memory testing.
  */
 
-void *
-xmalloc(unsigned size)
-{
-  void * a_ptr;
+#define ARENA_BINS 13
+#define ARENA_CHUNK (8u * 1024u * 1024u)
 
-  if((a_ptr = (void *) malloc(size)) != NULL) return a_ptr;
-  else {
+struct ArenaChunk {
+  struct ArenaChunk *next;
+  size_t map_bytes;
+  size_t cap;
+  size_t used;
+  unsigned char mem[];
+};
+
+struct ArenaHdr {
+  uint32_t idx;
+  uint32_t large;
+  struct ArenaChunk *chunk;
+};
+
+struct ArenaNode {
+  struct ArenaNode *next;
+};
+
+static struct ArenaChunk *arena_chunks;
+static struct ArenaNode *arena_bins[ARENA_BINS];
+
+static int
+arena_class(size_t need, size_t *block)
+{
+  size_t class_bytes = 16;
+  int idx = 0;
+
+  while (idx < ARENA_BINS - 1 && class_bytes < need) {
+    class_bytes <<= 1;
+    idx++;
+  }
+  if (class_bytes < need) {
+    *block = (need + 15u) & ~(size_t) 15u;
+    return -1;
+  }
+  *block = class_bytes;
+  return idx;
+}
+
+static struct ArenaChunk *
+arena_chunk_new(size_t cap)
+{
+  size_t map_bytes;
+  struct ArenaChunk *chunk;
+
+  map_bytes = sizeof(struct ArenaChunk) + cap;
+  chunk = mmap(NULL, map_bytes, PROT_READ | PROT_WRITE,
+	       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (chunk == MAP_FAILED) {
     printf("***** ERROR: Out of memory ***** \n");
     exit(1);
   }
+  chunk->next = arena_chunks;
+  chunk->map_bytes = map_bytes;
+  chunk->cap = cap;
+  chunk->used = 0;
+  arena_chunks = chunk;
+  return chunk;
 }
 
-/*
- * Create a front-end fo calloc that performs out-of-memory testing.
- */
+static void
+arena_chunk_unmap(struct ArenaChunk *chunk)
+{
+  struct ArenaChunk **link;
+
+  link = &arena_chunks;
+  while (*link != NULL && *link != chunk) {
+    link = &(*link)->next;
+  }
+  if (*link != NULL) {
+    *link = chunk->next;
+  }
+  munmap(chunk, chunk->map_bytes);
+}
+
+static void *
+arena_bump(size_t block)
+{
+  struct ArenaChunk *chunk;
+  void *ptr;
+
+  chunk = arena_chunks;
+  if (chunk == NULL || chunk->used + block > chunk->cap) {
+    chunk = arena_chunk_new(block > ARENA_CHUNK ? block : ARENA_CHUNK);
+  }
+  ptr = chunk->mem + chunk->used;
+  chunk->used += block;
+  return ptr;
+}
+
+void *
+xmalloc(unsigned size)
+{
+  size_t block;
+  int idx;
+  struct ArenaHdr *hdr;
+  struct ArenaNode *node;
+
+  if (size == 0) {
+    size = 1;
+  }
+  idx = arena_class((size_t) size + sizeof(struct ArenaHdr), &block);
+  if (idx < 0) {
+    struct ArenaChunk *chunk;
+
+    chunk = arena_chunk_new(block);
+    hdr = (struct ArenaHdr *) chunk->mem;
+    chunk->used = block;
+    hdr->idx = 0;
+    hdr->large = 1;
+    hdr->chunk = chunk;
+    return (unsigned char *) hdr + sizeof(struct ArenaHdr);
+  }
+  if (arena_bins[idx] != NULL) {
+    node = arena_bins[idx];
+    arena_bins[idx] = node->next;
+    return node;
+  }
+  hdr = arena_bump(block);
+  hdr->idx = (uint32_t) idx;
+  hdr->large = 0;
+  hdr->chunk = NULL;
+  return (unsigned char *) hdr + sizeof(struct ArenaHdr);
+}
 
 void *
 xcalloc(unsigned num, unsigned size)
 {
-  void * a_ptr;
+  void *ptr;
+  size_t bytes;
 
-  if((a_ptr = (void *) calloc(num, size)) != NULL) return a_ptr;
-  else {
-    printf(" ***** WARNING: Out of memory ***** \n");
-    exit(1);
-  }
+  bytes = (size_t) num * (size_t) size;
+  ptr = xmalloc((unsigned) bytes);
+  memset(ptr, 0, bytes);
+  return ptr;
 }
 
-/*
- * Create a front-end for free that checks for null pointers.
- */
+void
+xfree(void *ptr)
+{
+  struct ArenaHdr *hdr;
+  struct ArenaNode *node;
+
+  if (ptr == NULL) {
+    printf("Warning: Attempting to free a NULL pointer.\n");
+    return;
+  }
+  hdr = (struct ArenaHdr *) ((unsigned char *) ptr - sizeof(struct ArenaHdr));
+  if (hdr->large) {
+    arena_chunk_unmap(hdr->chunk);
+    return;
+  }
+  node = ptr;
+  node->next = arena_bins[hdr->idx];
+  arena_bins[hdr->idx] = node;
+}
 
 void
-xfree(void * ptr)
+simulation_memory_release(void)
 {
-  if(ptr == NULL) {
-    printf("Warning: Attempting to free a NULL pointer.\n");
+  struct ArenaChunk *chunk;
+
+  chunk = arena_chunks;
+  while (chunk != NULL) {
+    struct ArenaChunk *next;
+
+    next = chunk->next;
+    munmap(chunk, chunk->map_bytes);
+    chunk = next;
   }
-  else free(ptr);
+  arena_chunks = NULL;
+  memset(arena_bins, 0, sizeof(arena_bins));
 }
 
 

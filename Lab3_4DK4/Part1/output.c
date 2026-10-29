@@ -85,7 +85,7 @@ void output_results(Simulation_Run_Ptr this_simulation_run)
 	 (double) sim_data->number_of_collisions / 
 	 sim_data->number_of_packets_processed);
 
-  for(i=0; i<NUMBER_OF_STATIONS; i++) {
+  for(i=0; i<sim_data->number_of_stations; i++) {
 
     printf("Station %2i Mean Delay = %8.1f \n", i,
 	   (sim_data->stations+i)->accumulated_delay / 

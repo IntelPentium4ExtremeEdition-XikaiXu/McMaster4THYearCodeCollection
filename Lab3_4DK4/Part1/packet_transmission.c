@@ -96,7 +96,7 @@ schedule_transmission_end_event(Simulation_Run_Ptr simulation_run,
 /*******************************************************************************/
 
 void
-transmission_end_event(Simulation_Run_Ptr simulation_run, void * packet, int mean_backoff_duration)
+transmission_end_event(Simulation_Run_Ptr simulation_run, void * packet)
 {
   Packet_Ptr this_packet, next_packet;
   Buffer_Ptr buffer;
@@ -136,7 +136,7 @@ transmission_end_event(Simulation_Run_Ptr simulation_run, void * packet, int mea
     output_blip_to_screen(simulation_run);
 
     /* This packet is done. */
-    free((void*) fifoqueue_get(buffer));
+    xfree((void*) fifoqueue_get(buffer));
 
     /* See if there is another packet at this station. If so, enable
        it for transmission. We will transmit immediately. */
@@ -164,7 +164,7 @@ transmission_end_event(Simulation_Run_Ptr simulation_run, void * packet, int mea
       set_channel_state(channel, IDLE);
     }
 
-    backoff_duration = 2.0*uniform_generator() * mean_backoff_duration;
+    backoff_duration = exponential_generator(data->mean_backoff_duration); //for exponential distribution
 
     schedule_transmission_start_event(simulation_run,
 				      now + backoff_duration,

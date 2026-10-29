@@ -63,7 +63,7 @@ packet_arrival_event(Simulation_Run_Ptr simulation_run, void* dummy_ptr)
   /* Randomly pick the station that this packet is arriving to. Note
      that randomly splitting a Poisson process creates multiple
      independent Poisson processes.*/
-  random_station_id = (int) floor(uniform_generator()*NUMBER_OF_STATIONS);
+  random_station_id = (int) floor(uniform_generator()*data->number_of_stations);
   station = data->stations + random_station_id;
 
   new_packet = (Packet_Ptr) xmalloc(sizeof(Packet));
@@ -85,8 +85,8 @@ packet_arrival_event(Simulation_Run_Ptr simulation_run, void* dummy_ptr)
   }
 
   /* Schedule the next packet arrival. */
-  schedule_packet_arrival_event(simulation_run, 
-		now + exponential_generator((double) 1/PACKET_ARRIVAL_RATE));
+  schedule_packet_arrival_event(simulation_run,
+		now + exponential_generator((double) 1/data->packet_arrival_rate));
 }
 
 
