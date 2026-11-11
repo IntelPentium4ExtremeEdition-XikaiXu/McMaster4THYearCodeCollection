@@ -42,7 +42,7 @@ for i = 1:length(N_values)
 
     % Plot DTFT magnitude
     subplot(5,1,i);
-    stem(w_all{i},abs(X_DTFT_all{i}),'filled');
+    plot(w_all{i},abs(X_DTFT_all{i}));
     title(['DTFT Magnitude, N = ',num2str(N)]);
     xlabel('Frequency w');
     ylabel('|X[w]|');
@@ -78,7 +78,7 @@ end
 
 
 %% Question 2
-
+%% clear the workspace before testing question 2 content
 
 %% Part a
 [x, Fs] = audioread('aaa.wav'); % load the audio file
@@ -99,7 +99,7 @@ grid on;
 
 %% part c 
 T = (0.03475 - 0.024875);
-TN=  int64(T*Fs);
+TN=  int64(T*Fs)+1;
 
 x1 = x(1:TN);
 x2 = x(1:2*TN);
