@@ -1,0 +1,47 @@
+Lab 4 ARQ results
+backend = /home/xikaixu/Development/McMaster4THYearMatlabs/Lab4_4DK4/ARQSimBackEnd/arq_sim
+Seeds: 400440917, 400460804, 230411341234134134
+Error-free pipe: efficiency = min(1, Ws/11), S&W = 1/11.
+
+[Q1]
+  sw_clean: completion=66.000 ms, attempts=1.000
+  gbn_clean: completion=36.000 ms, attempts=1.000
+  sr_clean: completion=36.000 ms, attempts=1.000
+  sw_err: completion=493.000 ms, attempts=4.375
+  gbn_err: completion=133.000 ms, attempts=3.250
+  sr_err: completion=248.000 ms, attempts=4.375
+
+[Q2]
+  results/Q2/efficiency_vs_Ws.png
+
+[Q3a]
+  results/Q3/efficiency_vs_pd.png
+
+[Q3b]
+  results/Q3/efficiency_vs_Ws.png
+  results/Q3/attempts_vs_Ws.png
+
+[Q4]
+  results/Q4/efficiency_vs_pa.png
+  results/Q4/attempts_vs_pa.png
+
+[Q5]
+  results/Q5/efficiency_vs_Tout.png
+  results/Q5/attempts_vs_Tout.png
+
+[Q6]
+  results/Q6/pd0_pa0_completion_vs_Ws.png
+  results/Q6/pd0.05_pa0_completion_vs_Ws.png
+  results/Q6/pd0.05_pa0.05_completion_vs_Ws.png
+
+[Q7]
+  results/Q7/pd0_pa0_completion_vs_Ws.png
+  results/Q7/pd0.05_pa0_completion_vs_Ws.png
+  results/Q7/pd0.05_pa0.05_completion_vs_Ws.png
+
+Q2 check against min(1, Ws/11):
+  GBN Ws=1: sim=0.0909  analysis=0.0909  delta=-0.0000
+  GBN Ws=5: sim=0.4545  analysis=0.4545  delta=-0.0000
+  GBN Ws=11: sim=0.9999  analysis=1.0000  delta=-0.0001
+  GBN Ws=16: sim=0.9999  analysis=1.0000  delta=-0.0001
+  GBN Ws=32: sim=0.9999  analysis=1.0000  delta=-0.0001
