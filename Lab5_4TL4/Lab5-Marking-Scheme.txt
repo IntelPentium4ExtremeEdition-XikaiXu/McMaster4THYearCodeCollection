@@ -1,0 +1,20 @@
+********* Marking Scheme for Lab 5 (CoE 4TL4) *********
+
+Total:
+
+Demo: 30
+Report: 10
+___________________________________
+
+Mark Breakdowns:
+
+MATLAB code demo: 
+Q1: 10
+Q2: 10
+Q3: 10
+
+Report: 
+Q1: 3
+Q2: 3
+Q3: 4
+
